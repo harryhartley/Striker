@@ -9,6 +9,7 @@ const Home: NextPage = () => {
       <h1>Striker</h1>
       {!user.isSignedIn && <SignInButton />}
 			{user.isSignedIn && <UserButton afterSignOutUrl="/"/>}
+      <div>Strike Stages</div>
     </>
   );
 };
