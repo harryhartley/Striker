@@ -22,14 +22,40 @@ const Home: NextPage = () => {
       {name: 'Desert', image: 'https://i.imgur.com/RxkSs5N.png', width: 'X', height: 'Y'},
       {name: 'Room', image: 'https://i.imgur.com/TB6KlRK.png', width: 'X', height: 'Y'},
       {name: 'Outskirts', image: 'https://i.imgur.com/R5b6ZNq.png', width: 'X', height: 'Y'},
-      {name: 'Streets', image: 'https://i.imgur.com/gSxcB5k.png', width: 'X', height: 'Y'}
+      {name: 'Streets', image: 'https://i.imgur.com/gSxcB5k.png', width: 'X', height: 'Y'},
+      {name: 'Elevator', image: 'https://i.imgur.com/nRFtIK9.png', width: 'X', height: 'Y'},
+      {name: 'Factory', image: 'https://i.imgur.com/s4sNwrw.png', width: 'X', height: 'Y'},
+      {name: 'Pool', image: 'https://i.imgur.com/8xhB7na.png', width: 'X', height: 'Y'},
+      {name: 'Stadium', image: 'https://i.imgur.com/90N2Yr8.png', width: 'X', height: 'Y'},
     ],
     counterpickStages: [],
-    bannedStages: [],
+    bannedStages: [
+      {name: 'Streets', image: 'https://i.imgur.com/gf0oKf8.png', width: 'X', height: 'Y'}
+    ],
     numberOfBans: 2
   }
+  // const roomConfig = {
+  //   gameName: 'Lethal League Blaze',
+  //   bestOf: 3,
+  //   legalStages: [
+  //     {name: 'Subway', image: 'https://i.imgur.com/TQliTA8.png', width: 'X', height: 'Y'},
+  //     {name: 'Desert', image: 'https://i.imgur.com/RxkSs5N.png', width: 'X', height: 'Y'},
+  //     {name: 'Room', image: 'https://i.imgur.com/TB6KlRK.png', width: 'X', height: 'Y'},
+  //     {name: 'Outskirts', image: 'https://i.imgur.com/R5b6ZNq.png', width: 'X', height: 'Y'},
+  //     {name: 'Streets', image: 'https://i.imgur.com/gSxcB5k.png', width: 'X', height: 'Y'}
+  //   ],
+  //   counterpickStages: [
+  //     {name: 'Elevator', image: 'https://i.imgur.com/nRFtIK9.png', width: 'X', height: 'Y'},
+  //     {name: 'Pool', image: 'https://i.imgur.com/8xhB7na.png', width: 'X', height: 'Y'},
+  //   ],
+  //   bannedStages: [
+  //     {name: 'Streets', image: 'https://i.imgur.com/gf0oKf8.png', width: 'X', height: 'Y'}
+  //   ],
+  //   numberOfBans: 2
+  // }
 
   const [selectedStage, setSelectedState] = useState(0)
+  const [currentBans, setCurrentBans] = useState<number[]>([])
   
   const [roomState, setRoomState] = useState(3)
   return (
@@ -67,17 +93,20 @@ const Home: NextPage = () => {
                 <img className="rounded-lg" src={roomConfig.legalStages[selectedStage]?.image} alt={roomConfig.legalStages[selectedStage]?.name}/>
                 <div className="text-3xl absolute bottom-2 left-4">{roomConfig.legalStages[selectedStage]?.name}</div>
                 <div className="text-3xl absolute bottom-2 right-4">Width: X Height: Y</div>
-                <button className="text-4xl bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">BAN</button>
+                <button onClick={() => setCurrentBans([...currentBans, selectedStage])} className="text-4xl bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">BAN</button>
             </div>
             <div className="grid grid-cols-5 gap-4">
                 {roomConfig.legalStages.map((stage, idx) => 
-                  <img 
-                    key={`stage-${idx}`} 
-                    className={`rounded-lg ${selectedStage === idx ? 'border-4 border-red-600 rounded-xl' : ''}`} 
-                    src={stage.image} 
-                    alt={stage.name}
-                    onClick={() => setSelectedState(idx)}
-                  />
+                  <div onClick={() => setSelectedState(idx)} className="relative" key={`stage-${idx}`}>
+                    <img 
+                      className={`rounded-lg ${selectedStage === idx ? 'border-4 border-red-600 rounded-xl' : ''}`} 
+                      src={stage.image} 
+                      alt={stage.name}
+                    />
+                    {currentBans.includes(idx) && 
+                      <div className="text-4xl text-red-500 font-bold py-2 px-4 rounded absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">BANNED</div>
+                    }
+                  </div>
                 )}
             </div>
           </div>
