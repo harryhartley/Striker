@@ -145,7 +145,7 @@ const Home: NextPage = () => {
       {/* Stage striking */}
       {roomState === 2 && 
         <>
-          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">{ (((currentBans.length - 1) % 4) + 4) % 4 === 0 || (((currentBans.length - 2) % 4) + 4) % 4 === 0 ? socketConfig.p1 : socketConfig.p2 }: Ban {currentBans.length % 2 === 0 || currentBans.length === roomConfig.legalStages.length - 2 ? '1 stage' : '2 stages'}</h2>
+          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">{ (((currentBans.length - 1) % 4) + 4) % 4 === 0 || (((currentBans.length - 2) % 4) + 4) % 4 === 0 ? socketConfig.p2 : socketConfig.p1 }: Ban {currentBans.length % 2 === 0 || currentBans.length === roomConfig.legalStages.length - 2 ? '1 stage' : '2 stages'}</h2>
           <div className="grid gap-4">
             <div className="relative text-white font-bold">
                 <img className="rounded-lg" src={roomConfig.legalStages[selectedStage]?.image} alt={roomConfig.legalStages[selectedStage]?.name}/>
