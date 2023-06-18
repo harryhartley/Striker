@@ -3,6 +3,14 @@ import { useUser } from "@clerk/nextjs";
 import { type NextPage } from "next";
 import { useState } from "react";
 
+const firstMissingNumber = (current: number[], length: number): number => {
+  const currentSorted = current.sort()
+  for (let i = 0; i < length; i++) {    
+    if (currentSorted[i] != i) return i
+  }
+  return -1
+} 
+
 // Expected room config:
 // Ruleset: Game Name, Best of x?, Legal stages, counterpick stages, banned stages, 
 //          number of bans, winnerCharacterLocked?
@@ -11,8 +19,8 @@ const Home: NextPage = () => {
   const { user } = useUser()
   
   const socketConfig = {
-    p1: user?.username,
-    p2: 'Jawdrop'
+    p0: user?.username,
+    p1: 'Jawdrop'
   }
   // const roomConfig = {
   //   gameName: 'Lethal League Blaze',
@@ -52,6 +60,8 @@ const Home: NextPage = () => {
   const roomConfig = {
     gameName: 'Lethal League Blaze',
     bestOf: 3,
+    numberOfBans: 2,
+    winnerCharacterLocked: true,
     legalCharacters: [
       {name: 'Candyman', image: 'https://i.imgur.com/fiIa0Wp.png'},
       {name: 'Dice', image: 'https://i.imgur.com/hVHrBkE.png'},
@@ -81,25 +91,27 @@ const Home: NextPage = () => {
     bannedStages: [
       {name: 'Streets', image: 'https://i.imgur.com/gf0oKf8.png', width: 'X', height: 'Y'}
     ],
-    numberOfBans: 2
   }
 
+  const defaultCharacter = roomConfig.legalCharacters.find(x => x.default === true)
+
   const [currentScore, setCurrentScore] = useState<[number, number]>([0, 0])
-  const [p1Character, setP1Character] = useState(roomConfig.legalCharacters.find(x => x.default === true))
-  const [p2Character, setP2Character] = useState(roomConfig.legalCharacters.find(x => x.default === true))
-  const [p1CharacterLocked, setP1CharacterLocked] = useState(false)
-  const [selectedStage, setSelectedState] = useState(0)
+  const [p0Character, setP0Character] = useState(defaultCharacter)
+  const [p1Character, setP1Character] = useState(defaultCharacter)
+  const [characterLocked, setCharacterLocked] = useState(false)
+  const [mostRecentWinner, setMostRecentWinner] = useState(-1)
+  const [selectedStage, setSelectedStage] = useState(0)
   const [currentBans, setCurrentBans] = useState<number[]>([])
   
   const [roomState, setRoomState] = useState(1)
   return (
     <>
       <div className="flex items-center space-y-2 pt-4 md:space-y-5">
-        <img className="flex justify-center flex-1 w-4 max-w-xs" src={p1Character?.image} alt={p1Character?.name}/>
-        <h1 className="flex justify-center flex-1 md:leading-14 text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">{socketConfig.p1}</h1>
+        <img className="flex justify-center flex-1 w-4 max-w-xs" src={p0Character?.image} alt={p0Character?.name}/>
+        <h1 className="flex justify-center flex-1 md:leading-14 text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">{socketConfig.p0}</h1>
         <h1 className="flex justify-center flex-1 md:leading-14 text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">vs</h1>
-        <h1 className="flex justify-center flex-1 md:leading-14 text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">{socketConfig.p2}</h1>
-        <img className="flex justify-center flex-1 w-4 max-w-xs" src={p2Character?.image} alt={p2Character?.name}/>
+        <h1 className="flex justify-center flex-1 md:leading-14 text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">{socketConfig.p1}</h1>
+        <img className="flex justify-center flex-1 w-4 max-w-xs" src={p1Character?.image} alt={p1Character?.name}/>
       </div>
       <div className="flex items-end justify-center gap-4 space-y-2 pb-6 md:space-y-5">
         <h1 className="md:leading-14 text-xl font-bold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">{currentScore[0]}</h1>
@@ -116,10 +128,17 @@ const Home: NextPage = () => {
       {/* Blind character selection */}
       {roomState === 1 && 
         <>
-          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">{!p1CharacterLocked ? socketConfig.p1 : socketConfig.p2}: Pick your character</h2>
+          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">{!characterLocked ? socketConfig.p0 : socketConfig.p1}: Pick your character</h2>
           <div className="grid gap-4">
             <button 
-              onClick={() => {!p1CharacterLocked ? setP1CharacterLocked(true) : setRoomState(roomState + 1)}}
+              onClick={() => {
+                if (!characterLocked) {
+                  setCharacterLocked(true)
+                } else { 
+                  setRoomState(roomState + 1)
+                  setCharacterLocked(false)
+                }
+              }}
               className="text-4xl bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
             >
               LOCK IN
@@ -127,11 +146,16 @@ const Home: NextPage = () => {
             <div className="grid grid-cols-5 gap-4">
                 {roomConfig.legalCharacters.map((character, idx) => 
                   <div 
-                    onClick={() => {!p1CharacterLocked ? setP1Character(character) : setP2Character(character)}} 
+                    onClick={() => {
+                      if (!characterLocked) { 
+                        setP0Character(character)
+                      } else {
+                        setP1Character(character)
+                      }
+                    }} 
                     className="relative" key={`character-${idx}`}
                   >
                     <img 
-                      // className={`rounded-lg ${p1Character === idx ? 'border-4 border-red-600 rounded-xl' : ''}`} 
                       src={character.image} 
                       alt={character.name}
                     />
@@ -145,7 +169,7 @@ const Home: NextPage = () => {
       {/* Stage striking */}
       {roomState === 2 && 
         <>
-          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">{ (((currentBans.length - 1) % 4) + 4) % 4 === 0 || (((currentBans.length - 2) % 4) + 4) % 4 === 0 ? socketConfig.p2 : socketConfig.p1 }: Ban {currentBans.length % 2 === 0 || currentBans.length === roomConfig.legalStages.length - 2 ? '1 stage' : '2 stages'}</h2>
+          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">{ (((currentBans.length - 1) % 4) + 4) % 4 === 0 || (((currentBans.length - 2) % 4) + 4) % 4 === 0 ? socketConfig.p1 : socketConfig.p0 }: Ban {currentBans.length % 2 === 0 || currentBans.length === roomConfig.legalStages.length - 2 ? '1 stage' : '2 stages'}</h2>
           <div className="grid gap-4">
             <div className="relative text-white font-bold">
                 <img className="rounded-lg" src={roomConfig.legalStages[selectedStage]?.image} alt={roomConfig.legalStages[selectedStage]?.name}/>
@@ -153,19 +177,30 @@ const Home: NextPage = () => {
                 <div className="text-3xl absolute bottom-2 right-4">Width: {roomConfig.legalStages[selectedStage]?.width} Height: {roomConfig.legalStages[selectedStage]?.height}</div>
                 <button 
                   onClick={() => {
-                    setCurrentBans([...currentBans, selectedStage])
-                    // currentBans dispatch isn't seen yet, so ban length is still 1 behind
-                    if (currentBans.length === roomConfig.legalStages.length - 2) {
+                    const newBans = [...currentBans, selectedStage]
+                    setCurrentBans(newBans)
+                    setSelectedStage(firstMissingNumber(newBans, roomConfig.legalStages.length))
+                    if (newBans.length === roomConfig.legalStages.length - 1) {
                       setRoomState(roomState + 1)
+                      setSelectedStage(firstMissingNumber(newBans, roomConfig.legalStages.length))
+                      setCurrentBans([])
                     }
                   }} 
                   className="text-4xl bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">BAN</button>
             </div>
             <div className="grid grid-cols-5 gap-4">
                 {roomConfig.legalStages.map((stage, idx) => 
-                  <div onClick={() => setSelectedState(idx)} className="relative" key={`stage-${idx}`}>
+                  <div 
+                    onClick={() => {
+                      if (!currentBans.includes(idx)) {
+                        setSelectedStage(idx)
+                      }
+                    }} 
+                    className="relative" 
+                    key={`stage-${idx}`}
+                  >
                     <img 
-                      className={`rounded-lg ${selectedStage === idx ? 'border-4 border-red-600 rounded-xl' : ''}`} 
+                      className={`rounded-xl border-4 ${selectedStage === idx || currentBans.includes(idx) ? 'border-red-600' : 'border-green-600 cursor-pointer'}`} 
                       src={stage.image} 
                       alt={stage.name}
                     />
@@ -188,28 +223,36 @@ const Home: NextPage = () => {
               <button
                 onClick={() => {
                   setCurrentScore([currentScore[0] + 1, currentScore[1]])
+                  setMostRecentWinner(0)
                   if (currentScore[0] === Math.floor(roomConfig.bestOf / 2)) {
                     setRoomState(6)
                   } else { 
-                    setRoomState (roomState + 1)
+                    setRoomState(roomState + 1)
+                    if (roomConfig.winnerCharacterLocked) {
+                      setCharacterLocked(true)
+                    }
+                  }
+                }}
+                className="text-4xl bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+              >
+                {socketConfig.p0}
+              </button>
+              <button 
+                onClick={() => {
+                  setCurrentScore([currentScore[0], currentScore[1] + 1])
+                  setMostRecentWinner(1)
+                  if (currentScore[1] === Math.floor(roomConfig.bestOf / 2)) {
+                    setRoomState(6)
+                  } else {
+                    setRoomState(roomState + 1)
+                    if (roomConfig.winnerCharacterLocked) {
+                      setCharacterLocked(true)
+                    }
                   }
                 }}
                 className="text-4xl bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
               >
                 {socketConfig.p1}
-              </button>
-              <button 
-                onClick={() => {
-                  setCurrentScore([currentScore[0], currentScore[1] + 1])
-                  if (currentScore[1] === Math.floor(roomConfig.bestOf / 2)) {
-                    setRoomState(6)
-                  } else { 
-                    setRoomState (roomState + 1)
-                  }
-                }}
-                className="text-4xl bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-              >
-                {socketConfig.p2}
               </button>
             </div>
             <div className="relative text-white font-bold">
@@ -224,17 +267,101 @@ const Home: NextPage = () => {
       
       {/* W picks character first, L picks character second */}
       {roomState === 4 && 
-        <div></div>
+        <>
+          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">
+            {roomConfig.winnerCharacterLocked ? mostRecentWinner === 0 ? socketConfig.p1 : socketConfig.p0 : mostRecentWinner === 0 ? !characterLocked ? socketConfig.p0 : socketConfig.p1 : !characterLocked ? socketConfig.p1 : socketConfig.p0}: Change your character?
+          </h2>
+          <div className="grid gap-4">
+            <button 
+              onClick={() => {
+                if (!characterLocked) {
+                  setCharacterLocked(true)
+                } else { 
+                  setRoomState(roomState + 1)
+                  setCharacterLocked(false)
+                }
+              }}
+              className="text-4xl bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+            >
+              LOCK IN
+            </button>
+            <div className="grid grid-cols-5 gap-4">
+                {roomConfig.legalCharacters.map((character, idx) => 
+                  <div 
+                    onClick={() => {
+                      if ((mostRecentWinner === 0 && !characterLocked) || (mostRecentWinner === 1 && characterLocked)) { 
+                        setP0Character(character)
+                      } else {
+                        setP1Character(character)
+                      }
+                    }} 
+                    className="relative" key={`character-${idx}`}
+                  >
+                    <img 
+                      src={character.image} 
+                      alt={character.name}
+                    />
+                  </div>
+                )}
+            </div>
+          </div>
+        </>
       }
 
       {/* W bans stages, L picks stage */}
       {roomState === 5 && 
-        <div></div>
+        <>
+          {/* Last night, got the correct number of bans before stage selection */}
+          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">{mostRecentWinner === 0 ? socketConfig.p0 : socketConfig.p1}: Ban {roomConfig.numberOfBans === 1 ? '1 stage' : `${roomConfig.numberOfBans - currentBans.length} stages`}</h2>
+          <div className="grid gap-4">
+            <div className="relative text-white font-bold">
+                <img className="rounded-lg" src={roomConfig.legalStages[selectedStage]?.image} alt={roomConfig.legalStages[selectedStage]?.name}/>
+                <div className="text-3xl absolute bottom-2 left-4">{roomConfig.legalStages[selectedStage]?.name}</div>
+                <div className="text-3xl absolute bottom-2 right-4">Width: {roomConfig.legalStages[selectedStage]?.width} Height: {roomConfig.legalStages[selectedStage]?.height}</div>
+                <button 
+                  onClick={() => {
+                    const newBans = [...currentBans, selectedStage]
+                    setCurrentBans(newBans)
+                    setSelectedStage(firstMissingNumber(newBans, roomConfig.legalStages.length))
+                    if (newBans.length === roomConfig.legalStages.length - 1) {
+                      setRoomState(roomState + 1)
+                      setSelectedStage(firstMissingNumber(newBans, roomConfig.legalStages.length))
+                      setCurrentBans([])
+                    }
+                  }} 
+                  className="text-4xl bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">BAN</button>
+            </div>
+            <div className="grid grid-cols-5 gap-4">
+                {roomConfig.legalStages.map((stage, idx) => 
+                  <div 
+                    onClick={() => {
+                      if (!currentBans.includes(idx)) {
+                        setSelectedStage(idx)
+                      }
+                    }} 
+                    className="relative" 
+                    key={`stage-${idx}`}
+                  >
+                    <img 
+                      className={`rounded-xl border-4 ${selectedStage === idx || currentBans.includes(idx) ? 'border-red-600' : 'border-green-600 cursor-pointer'}`} 
+                      src={stage.image} 
+                      alt={stage.name}
+                    />
+                    {currentBans.includes(idx) && 
+                      <div className="text-4xl text-red-500 font-bold py-2 px-4 rounded absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">BANNED</div>
+                    }
+                  </div>
+                )}
+            </div>
+          </div>
+        </>
       }
 
       {/* If game is over, display final result (and store in database) */}
       {roomState === 6 && 
-        <div></div>
+        <>
+          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">Match Complete</h2>
+        </>
       }
     </>
   );
