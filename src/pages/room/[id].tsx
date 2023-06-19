@@ -312,7 +312,7 @@ const Home: NextPage = () => {
       {roomState === 5 && 
         <>
           {/* Last night, got the correct number of bans before stage selection */}
-          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">{mostRecentWinner === 0 ? socketConfig.p0 : socketConfig.p1}: Ban {roomConfig.numberOfBans === 1 ? '1 stage' : `${roomConfig.numberOfBans - currentBans.length} stages`}</h2>
+          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">{(mostRecentWinner === 0 && currentBans.length !== roomConfig.numberOfBans) || (mostRecentWinner === 1 && currentBans.length === roomConfig.numberOfBans) ? socketConfig.p0 : socketConfig.p1}: {currentBans.length === roomConfig.numberOfBans ? 'Pick' : 'Ban'} {roomConfig.numberOfBans === 1 || currentBans.length - roomConfig.numberOfBans === 1 || currentBans.length === roomConfig.numberOfBans ? '1 stage' : `${roomConfig.numberOfBans - currentBans.length} stages`}</h2>
           <div className="grid gap-4">
             <div className="relative text-white font-bold">
                 <img className="rounded-lg" src={roomConfig.legalStages[selectedStage]?.image} alt={roomConfig.legalStages[selectedStage]?.name}/>
@@ -320,16 +320,19 @@ const Home: NextPage = () => {
                 <div className="text-3xl absolute bottom-2 right-4">Width: {roomConfig.legalStages[selectedStage]?.width} Height: {roomConfig.legalStages[selectedStage]?.height}</div>
                 <button 
                   onClick={() => {
-                    const newBans = [...currentBans, selectedStage]
-                    setCurrentBans(newBans)
-                    setSelectedStage(firstMissingNumber(newBans, roomConfig.legalStages.length))
-                    if (newBans.length === roomConfig.legalStages.length - 1) {
-                      setRoomState(roomState + 1)
-                      setSelectedStage(firstMissingNumber(newBans, roomConfig.legalStages.length))
+                    if (currentBans.length === roomConfig.numberOfBans) {
+                      setRoomState(roomState - 2)
                       setCurrentBans([])
+                    } else {
+                      const newBans = [...currentBans, selectedStage]
+                      setCurrentBans(newBans)
+                      setSelectedStage(firstMissingNumber(newBans, roomConfig.legalStages.length))
                     }
                   }} 
-                  className="text-4xl bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">BAN</button>
+                  className={`text-4xl ${currentBans.length === roomConfig.numberOfBans ? 'bg-green-500 hover:bg-green-700' : 'bg-red-500 hover:bg-red-700'} text-white font-bold py-2 px-4 rounded absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
+                  >
+                    {currentBans.length === roomConfig.numberOfBans ? 'PICK' : 'BAN'}
+                </button>
             </div>
             <div className="grid grid-cols-5 gap-4">
                 {roomConfig.legalStages.map((stage, idx) => 
