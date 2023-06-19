@@ -143,7 +143,7 @@ const Home: NextPage = () => {
             >
               LOCK IN
             </button>
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid grid-cols-10 gap-4">
                 {roomConfig.legalCharacters.map((character, idx) => 
                   <div 
                     onClick={() => {
@@ -285,7 +285,7 @@ const Home: NextPage = () => {
             >
               LOCK IN
             </button>
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid grid-cols-10 gap-4">
                 {roomConfig.legalCharacters.map((character, idx) => 
                   <div 
                     onClick={() => {
