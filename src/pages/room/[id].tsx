@@ -106,12 +106,12 @@ const Home: NextPage = () => {
   const [roomState, setRoomState] = useState(1)
   return (
     <>
-      <div className="flex items-center space-y-2 pt-4 md:space-y-5">
-        <img className="flex justify-center flex-1 w-4 max-w-xs" src={p0Character?.image} alt={p0Character?.name}/>
-        <h1 className="flex justify-center flex-1 md:leading-14 text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">{socketConfig.p0}</h1>
-        <h1 className="flex justify-center flex-1 md:leading-14 text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">vs</h1>
-        <h1 className="flex justify-center flex-1 md:leading-14 text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">{socketConfig.p1}</h1>
-        <img className="flex justify-center flex-1 w-4 max-w-xs" src={p1Character?.image} alt={p1Character?.name}/>
+      <div className="flex justify-center items-end space-y-2 pt-4 md:space-y-5">
+        <div className="flex justify-center flex-1 w-auto md:leading-14 text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl break-all">{socketConfig.p0}</div>
+        <img className="flex justify-center w-1/12 max-w-xs" src={p0Character?.image} alt={p0Character?.name}/>
+        <div className="flex justify-center w-1/12 md:leading-14 text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">vs</div>
+        <img className="flex justify-center w-1/12 max-w-xs" src={p1Character?.image} alt={p1Character?.name}/>
+        <div className="flex justify-center flex-1 w-auto md:leading-14 text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl break-all">{socketConfig.p1}</div>
       </div>
       <div className="flex items-end justify-center gap-4 space-y-2 pb-6 md:space-y-5">
         <h1 className="md:leading-14 text-xl font-bold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">{currentScore[0]}</h1>
