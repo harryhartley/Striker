@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-    provider = "sqlite"
+    provider = "mysql"
     // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
     // Further reading:
     // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
@@ -14,10 +14,50 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Example {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+enum Character {
+  All
+  Candyman
+  Dice
+  Doombox
+  Dust
+  Grid
+  Jet
+  Latch
+  Nitro
+  Raptor
+  Switch
+  Sonata
+  Toxic
+}
+
+enum RoomStatus {
+  Inactive
+  Active
+  Canceled
+  Complete
+}
+
+model StrikerRoom {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  p1Id      String
+  p1        User     @relation("p1", fields: [p1Id], references: [id])
+  p2Id      String?
+  p2        User?    @relation("p2", fields: [p2Id], references: [id])
+
+  roomStatus          RoomStatus @default(Inactive)
+
+  roomState           Int       @default(0)
+  currentScore        String    @default("0,0")
+  p1SelectedCharacter Character @default(All)
+  p2SelectedCharacter Character @default(All)
+  characterLocked     Boolean   @default(false)
+  mostRecentWinner    Int       @default(-1)
+  selectedStage       Int       @default(0)
+  currentBans         String    @default("")
+
+  @@index([p1Id])
+  @@index([p2Id])
 }
 
 // Necessary for Next auth
@@ -47,14 +87,25 @@ model Session {
     user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+enum Role {
+  USER
+  CONTRIBUTOR
+  MODERATOR
+  ADMIN
+}
+
 model User {
     id            String    @id @default(cuid())
     name          String?
     email         String?   @unique
     emailVerified DateTime?
     image         String?
+    role          Role          @default(USER)
+    banned        Boolean       @default(false)
     accounts      Account[]
     sessions      Session[]
+    p1            StrikerRoom[] @relation("p1")
+    p2            StrikerRoom[] @relation("p2")
 }
 
 model VerificationToken {
