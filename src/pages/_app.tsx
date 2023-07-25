@@ -1,8 +1,12 @@
 import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "next-themes";
 import { type AppType } from "next/app";
-import { api } from "~/utils/api";
+import Head from "next/head";
+import { LayoutWrapper } from "~/components/LayoutWrapper";
+import { SEO } from "~/components/SEO";
 import "~/styles/globals.css";
+import { api } from "~/utils/api";
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
@@ -10,7 +14,15 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
   return (
     <SessionProvider session={session}>
-      <Component {...pageProps} />
+      <ThemeProvider attribute="class" defaultTheme={"system"}>
+        <Head>
+          <meta content="width=device-width, initial-scale=1" name="viewport" />
+        </Head>
+        <SEO />
+        <LayoutWrapper>
+          <Component {...pageProps} />
+        </LayoutWrapper>
+      </ThemeProvider>
     </SessionProvider>
   );
 };
