@@ -3,8 +3,8 @@ import Head from "next/head";
 export const SEO = () => {
   return (
     <Head>
-      <title>Playbook</title>
-      <meta name="title" content="Striker" />
+      <title>Striker</title>
+      {/* <meta name="title" content="Striker" />
       <meta name="description" content="Striker is a" />
 
       <meta property="og:site_name" content="Striker" />
@@ -19,7 +19,7 @@ export const SEO = () => {
       <meta property="twitter:url" content="https://www.hyhy.gg/" />
       <meta property="twitter:title" content="Striker" />
       <meta property="twitter:description" content="Striker is a" />
-      <meta property="twitter:image" content="" />
+      <meta property="twitter:image" content="" /> */}
     </Head>
   );
 };

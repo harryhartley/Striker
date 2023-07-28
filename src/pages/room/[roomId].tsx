@@ -105,8 +105,6 @@ const Home: NextPage = () => {
     (x) => x.default === true
   );
 
-  const [p1Id, setStateP1Id] = useState<string | null>(null);
-  const [p2Id, setStateP2Id] = useState<string | null>(null);
   const [roomStatus, setStateRoomStatus] = useState<RoomStatus>("Inactive");
   const [roomState, setStateRoomState] = useState(0);
   const [currentScore, setStateCurrentScore] = useState<[number, number]>([
@@ -133,8 +131,6 @@ const Home: NextPage = () => {
       refetchOnWindowFocus: false,
       onSuccess: (data) => {
         if (data) {
-          setStateP1Id(data.p1Id);
-          setStateP2Id(data.p2Id);
           setStateRoomStatus(data.roomStatus);
           setStateRoomState(data.roomState);
           setStateCurrentScore(
@@ -178,15 +174,13 @@ const Home: NextPage = () => {
         setStateRoomStatus(data.roomStatus);
       });
       pusher.bind(
-        "set-p1-character-locked",
-        (data: { p1CharacterLocked: boolean }) => {
-          setStateP1CharacterLocked(data.p1CharacterLocked);
-        }
-      );
-      pusher.bind(
-        "set-p2-character-locked",
-        (data: { p2CharacterLocked: boolean }) => {
-          setStateP2CharacterLocked(data.p2CharacterLocked);
+        "set-character-locked",
+        (data: { playerNumber: number; characterLocked: boolean }) => {
+          if (data.playerNumber === 1) {
+            setStateP1CharacterLocked(data.characterLocked);
+          } else {
+            setStateP2CharacterLocked(data.characterLocked);
+          }
         }
       );
       pusher.bind("both-characters-locked", (data: { roomState: number }) => {
@@ -690,8 +684,8 @@ const Home: NextPage = () => {
                   handleSetCurrentScore([currentScore[0] + 1, currentScore[1]]);
                   handleSetMostRecentWinner(1);
                   if (currentScore[0] === Math.floor(roomConfig.bestOf / 2)) {
-                    handleSetRoomState(6);
                     handleSetRoomStatus("Complete");
+                    handleSetRoomState(6);
                   } else {
                     if (roomConfig.winnerCharacterLocked) {
                       handleSetCharacterLocked(1, true);
@@ -713,8 +707,8 @@ const Home: NextPage = () => {
                   handleSetCurrentScore([currentScore[0], currentScore[1] + 1]);
                   handleSetMostRecentWinner(2);
                   if (currentScore[1] === Math.floor(roomConfig.bestOf / 2)) {
-                    handleSetRoomState(6);
                     handleSetRoomStatus("Complete");
+                    handleSetRoomState(6);
                   } else {
                     if (roomConfig.winnerCharacterLocked) {
                       handleSetCharacterLocked(2, true);
@@ -753,6 +747,10 @@ const Home: NextPage = () => {
       {/* W picks character first, L picks character second */}
       {roomState === 4 && (
         <>
+          <div>
+            p1Locked: {p1CharacterLocked ? "true" : "false"} - p2Locked:{" "}
+            {p2CharacterLocked ? "true" : "false"}
+          </div>
           <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">
             {mostRecentWinner === 1
               ? p1CharacterLocked

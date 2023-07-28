@@ -139,6 +139,15 @@ export const strikerRoomRouter = createTRPCRouter({
             id: input.id,
           },
         });
+      } else {
+        await pusherServerClient.trigger(
+          `room-${input.id}`,
+          `set-character-locked`,
+          {
+            characterLocked: input.characterLocked,
+            playerNumber: input.playerNumber,
+          }
+        );
       }
       return setCharacterLocked;
     }),
