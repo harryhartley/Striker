@@ -84,13 +84,13 @@ export const roomConfigs: roomConfigInterface[] = [
       },
       {
         name: "Stadium",
-        image: "https://i.imgur.com/8xhB7na.png",
+        image: "https://i.imgur.com/GnSvFjR.png",
         width: "1230",
         height: "540",
       },
       {
         name: "Factory",
-        image: "https://i.imgur.com/8xhB7na.png",
+        image: "https://i.imgur.com/UkSDFGH.png",
         width: "1400",
         height: "542",
       },
@@ -173,13 +173,13 @@ export const roomConfigs: roomConfigInterface[] = [
       },
       {
         name: "Stadium",
-        image: "https://i.imgur.com/8xhB7na.png",
+        image: "https://i.imgur.com/GnSvFjR.png",
         width: "1230",
         height: "540",
       },
       {
         name: "Factory",
-        image: "https://i.imgur.com/8xhB7na.png",
+        image: "https://i.imgur.com/UkSDFGH.png",
         width: "1400",
         height: "542",
       },
