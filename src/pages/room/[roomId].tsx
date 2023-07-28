@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { pusherClient } from "~/server/common/pusherClient";
 import { api } from "~/utils/api";
+import { getConfigByName } from "~/utils/roomConfigs";
 
 const firstMissingNumber = (current: number[], length: number): number => {
   const currentSorted = current.sort();
@@ -20,81 +21,7 @@ const bansStringToList = (bans: string): number[] => {
   return bans.split(",").map(Number);
 };
 
-const roomConfig = {
-  gameName: "Lethal League Blaze",
-  bestOf: 3,
-  numberOfBans: 2,
-  winnerCharacterLocked: true,
-  legalCharacters: [
-    { name: "Candyman", image: "https://i.imgur.com/fiIa0Wp.png" },
-    { name: "Dice", image: "https://i.imgur.com/hVHrBkE.png" },
-    { name: "Doombox", image: "https://i.imgur.com/JI4k9Wo.png" },
-    { name: "Dust", image: "https://i.imgur.com/aabjDwX.png" },
-    { name: "Grid", image: "https://i.imgur.com/eAmPWSU.png" },
-    { name: "Jet", image: "https://i.imgur.com/9wRfyzA.png" },
-    { name: "Latch", image: "https://i.imgur.com/3UbnjBP.png" },
-    { name: "Nitro", image: "https://i.imgur.com/ZGD5PqH.png" },
-    { name: "Raptor", image: "https://i.imgur.com/XfzhISG.png" },
-    { name: "Sonata", image: "https://i.imgur.com/o6WcxWD.png" },
-    { name: "Switch", image: "https://i.imgur.com/o9r8z6j.png" },
-    { name: "Toxic", image: "https://i.imgur.com/s9xaYCu.png" },
-    { name: "All", image: "https://i.imgur.com/mgwDy0f.png", default: true },
-  ],
-  legalStages: [
-    {
-      name: "Subway",
-      image: "https://i.imgur.com/TQliTA8.png",
-      width: "1050",
-      height: "510",
-    },
-    {
-      name: "Desert",
-      image: "https://i.imgur.com/RxkSs5N.png",
-      width: "1130",
-      height: "510",
-    },
-    {
-      name: "Room",
-      image: "https://i.imgur.com/TB6KlRK.png",
-      width: "1100",
-      height: "550",
-    },
-    {
-      name: "Outskirts",
-      image: "https://i.imgur.com/R5b6ZNq.png",
-      width: "1240",
-      height: "510",
-    },
-    {
-      name: "Streets",
-      image: "https://i.imgur.com/gSxcB5k.png",
-      width: "1320",
-      height: "515",
-    },
-  ],
-  counterpickStages: [
-    {
-      name: "Elevator",
-      image: "https://i.imgur.com/nRFtIK9.png",
-      width: "1492",
-      height: "522",
-    },
-    {
-      name: "Pool",
-      image: "https://i.imgur.com/8xhB7na.png",
-      width: "1210",
-      height: "575",
-    },
-  ],
-  bannedStages: [
-    {
-      name: "Sewer",
-      image: "https://i.imgur.com/gf0oKf8.png",
-      width: "1240",
-      height: "510",
-    },
-  ],
-};
+const roomConfig = getConfigByName("LLB Stadium Ruleset");
 
 const Home: NextPage = () => {
   const { data: session } = useSession();
@@ -747,10 +674,6 @@ const Home: NextPage = () => {
       {/* W picks character first, L picks character second */}
       {roomState === 4 && (
         <>
-          <div>
-            p1Locked: {p1CharacterLocked ? "true" : "false"} - p2Locked:{" "}
-            {p2CharacterLocked ? "true" : "false"}
-          </div>
           <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">
             {mostRecentWinner === 1
               ? p1CharacterLocked

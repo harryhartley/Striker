@@ -7,7 +7,10 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 export const strikerRoomRouter = createTRPCRouter({
   createRoom: protectedProcedure.mutation(async ({ ctx }) => {
     const exists = await ctx.prisma.strikerRoom.findFirst({
-      where: { p1Id: ctx.session.user.id, roomStatus: "Active" || "Inactive" },
+      where: {
+        p1Id: ctx.session.user.id,
+        roomStatus: { in: ["Active", "Inactive"] },
+      },
     });
     if (!!exists) {
       throw new TRPCError({
