@@ -9,25 +9,36 @@ function randomIntFromIntervalInc(min: number, max: number) {
 }
 
 export const strikerRoomRouter = createTRPCRouter({
-  createRoom: protectedProcedure.mutation(async ({ ctx }) => {
-    const exists = await ctx.prisma.strikerRoom.findFirst({
-      where: {
-        p1Id: ctx.session.user.id,
-        roomStatus: { in: ["Active", "Inactive"] },
-      },
-    });
-    if (!!exists) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "Room already exists",
+  createRoom: protectedProcedure
+    .input(
+      z.object({
+        configId: z.string().cuid(),
+        bestOf: z.number(),
+        steamUrl: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const exists = await ctx.prisma.strikerRoom.findFirst({
+        where: {
+          p1Id: ctx.session.user.id,
+          roomStatus: { in: ["Active", "Inactive"] },
+        },
       });
-    }
-    return ctx.prisma.strikerRoom.create({
-      data: {
-        p1Id: ctx.session.user.id,
-      },
-    });
-  }),
+      if (!!exists) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Room already exists",
+        });
+      }
+      return ctx.prisma.strikerRoom.create({
+        data: {
+          p1Id: ctx.session.user.id,
+          configId: input.configId,
+          bestOf: input.bestOf,
+          steamUrl: input.steamUrl,
+        },
+      });
+    }),
   cancelRoom: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {

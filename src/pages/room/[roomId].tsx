@@ -2,11 +2,17 @@
 import { type Character, type RoomStatus } from "@prisma/client";
 import { type NextPage } from "next";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { pusherClient } from "~/server/common/pusherClient";
 import { api } from "~/utils/api";
-import { getConfigById } from "~/utils/roomConfigs";
+import {
+  fallbackCharacter,
+  getConfigById,
+  type characterInterface,
+  type roomConfigInterface,
+} from "~/utils/roomConfigs";
 
 const firstMissingNumber = (current: number[], length: number): number => {
   const currentSorted = current.sort();
@@ -21,30 +27,29 @@ const bansStringToList = (bans: string): number[] => {
   return bans.split(",").map(Number);
 };
 
-const roomConfig = getConfigById("clkp7ja74000008ju9zmg06n6");
-
 const Home: NextPage = () => {
   const { data: session } = useSession();
 
   const { query } = useRouter();
-
-  const defaultCharacter = roomConfig.legalCharacters.find(
-    (x) => x.default === true
-  );
 
   const [roomStatus, setStateRoomStatus] = useState<RoomStatus>("Inactive");
   const [roomState, setStateRoomState] = useState(0);
   const [currentScore, setStateCurrentScore] = useState<[number, number]>([
     0, 0,
   ]);
-  const [p1Character, setStateP1Character] = useState(defaultCharacter);
-  const [p2Character, setStateP2Character] = useState(defaultCharacter);
+  const [p1Character, setStateP1Character] = useState(fallbackCharacter);
+  const [p2Character, setStateP2Character] = useState(fallbackCharacter);
   const [p1CharacterLocked, setStateP1CharacterLocked] = useState(false);
   const [p2CharacterLocked, setStateP2CharacterLocked] = useState(false);
   const [mostRecentWinner, setStateMostRecentWinner] = useState(-1);
   const [selectedStage, setStateSelectedStage] = useState(0);
   const [currentBans, setStateCurrentBans] = useState<number[]>([]);
   const [firstBan, setStateFirstBan] = useState<number>(0);
+  const [configId, setStateConfigId] = useState("");
+  const [defaultCharacter, setStateDefaultCharacter] =
+    useState<characterInterface>(fallbackCharacter);
+  const [bestOf, setStateBestOf] = useState(1);
+  const [steamUrl, setStateSteamUrl] = useState<string | undefined>(undefined);
 
   const [iAmPlayer, setIAmPlayer] = useState<number | null>(null);
 
@@ -65,14 +70,14 @@ const Home: NextPage = () => {
             data.currentScore.split(",").map(Number) as [number, number]
           );
           setStateP1Character(
-            roomConfig.legalCharacters.find(
+            getConfigById(data.configId).legalCharacters.find(
               (x) => x.name === data.p1SelectedCharacter
-            ) ?? defaultCharacter
+            ) ?? fallbackCharacter
           );
           setStateP2Character(
-            roomConfig.legalCharacters.find(
+            getConfigById(data.configId).legalCharacters.find(
               (x) => x.name === data.p2SelectedCharacter
-            ) ?? defaultCharacter
+            ) ?? fallbackCharacter
           );
           setStateP1CharacterLocked(data.p1CharacterLocked);
           setStateP2CharacterLocked(data.p2CharacterLocked);
@@ -80,6 +85,14 @@ const Home: NextPage = () => {
           setStateSelectedStage(data.selectedStage);
           setStateCurrentBans(bansStringToList(data.currentBans));
           setStateFirstBan(data.firstBan);
+          setStateConfigId(data.configId);
+          setStateDefaultCharacter(
+            getConfigById(data.configId).legalCharacters.find(
+              (x) => x.default === true
+            ) ?? fallbackCharacter
+          );
+          setStateBestOf(data.bestOf);
+          setStateSteamUrl(data.steamUrl ?? undefined);
 
           if (data.p1Id === session?.user.id) {
             setIAmPlayer(1);
@@ -90,6 +103,22 @@ const Home: NextPage = () => {
       },
     }
   );
+
+  const [roomConfig, setStateRoomConfig] = useState<roomConfigInterface>({
+    id: "",
+    name: "",
+    gameName: "",
+    numberOfBans: 0,
+    winnerCharacterLocked: false,
+    legalCharacters: [],
+    legalStages: [],
+    counterpickStages: [],
+    bannedStages: [],
+  });
+
+  useEffect(() => {
+    setStateRoomConfig(getConfigById(configId));
+  }, [configId]);
 
   const pusher = pusherClient;
 
@@ -138,13 +167,13 @@ const Home: NextPage = () => {
               setStateP1Character(
                 roomConfig.legalCharacters.find(
                   (x) => x.name === data.character
-                )
+                ) ?? fallbackCharacter
               );
             } else {
               setStateP2Character(
                 roomConfig.legalCharacters.find(
                   (x) => x.name === data.character
-                )
+                ) ?? fallbackCharacter
               );
             }
           }
@@ -245,11 +274,13 @@ const Home: NextPage = () => {
     if (session) {
       if (playerNumber === 1) {
         setStateP1Character(
-          roomConfig.legalCharacters.find((x) => x.name === character)
+          roomConfig.legalCharacters.find((x) => x.name === character) ??
+            fallbackCharacter
         );
       } else {
         setStateP2Character(
-          roomConfig.legalCharacters.find((x) => x.name === character)
+          roomConfig.legalCharacters.find((x) => x.name === character) ??
+            fallbackCharacter
         );
       }
       setCharacter.mutate({
@@ -328,7 +359,7 @@ const Home: NextPage = () => {
         setCurrentBanner(firstBan === 1 ? 1 : 2);
       }
     }
-  }, [currentBans, firstBan, mostRecentWinner]);
+  }, [currentBans, firstBan, mostRecentWinner, roomConfig.numberOfBans]);
 
   if (typeof query.roomId !== "string") return <p>Bad ID</p>;
 
@@ -357,7 +388,7 @@ const Home: NextPage = () => {
 
           <div className="mt-8 flex flex-col items-center">
             <div>{roomConfig.name}</div>
-            <div>Best of {roomConfig.bestOf}</div>
+            <div>Best of {bestOf}</div>
             <div>{roomConfig.numberOfBans} Bans</div>
             <div>
               Character Locked: {roomConfig.winnerCharacterLocked ? "✅" : "❌"}
@@ -380,7 +411,7 @@ const Home: NextPage = () => {
               <>
                 <div className="mt-4">Counterpick Stages:</div>
                 <div className="grid grid-cols-3 gap-x-4">
-                  {roomConfig.legalStages.map((stage, idx) => (
+                  {roomConfig.counterpickStages.map((stage, idx) => (
                     <li key={`stage-${idx}`}>{stage.name}</li>
                   ))}
                 </div>
@@ -431,7 +462,7 @@ const Home: NextPage = () => {
 
         <div className="mt-8 flex flex-col items-center">
           <div>{roomConfig.name}</div>
-          <div>Best of {roomConfig.bestOf}</div>
+          <div>Best of {bestOf}</div>
           <div>{roomConfig.numberOfBans} Bans</div>
           <div>
             Character Locked: {roomConfig.winnerCharacterLocked ? "✅" : "❌"}
@@ -454,7 +485,7 @@ const Home: NextPage = () => {
             <>
               <div className="mt-4">Counterpick Stages:</div>
               <div className="grid grid-cols-3 gap-x-4">
-                {roomConfig.legalStages.map((stage, idx) => (
+                {roomConfig.counterpickStages.map((stage, idx) => (
                   <li key={`stage-${idx}`}>{stage.name}</li>
                 ))}
               </div>
@@ -698,6 +729,11 @@ const Home: NextPage = () => {
           <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">
             Game {currentScore[0] + currentScore[1] + 1} - Report Score
           </h2>
+          {steamUrl && (
+            <div className="flex justify-center pb-2 text-xl font-bold leading-8 tracking-tight">
+              <Link href={steamUrl}>Join Game Room: {steamUrl}</Link>
+            </div>
+          )}
           <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">
               <button
@@ -705,7 +741,7 @@ const Home: NextPage = () => {
                 onClick={() => {
                   handleSetCurrentScore([currentScore[0] + 1, currentScore[1]]);
                   handleSetMostRecentWinner(1);
-                  if (currentScore[0] === Math.floor(roomConfig.bestOf / 2)) {
+                  if (currentScore[0] === Math.floor(bestOf / 2)) {
                     handleSetRoomStatus("Complete");
                     handleSetRoomState(6);
                   } else {
@@ -728,7 +764,7 @@ const Home: NextPage = () => {
                 onClick={() => {
                   handleSetCurrentScore([currentScore[0], currentScore[1] + 1]);
                   handleSetMostRecentWinner(2);
-                  if (currentScore[1] === Math.floor(roomConfig.bestOf / 2)) {
+                  if (currentScore[1] === Math.floor(bestOf / 2)) {
                     handleSetRoomStatus("Complete");
                     handleSetRoomState(6);
                   } else {

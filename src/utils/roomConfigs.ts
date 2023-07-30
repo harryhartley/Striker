@@ -1,4 +1,4 @@
-interface characterInterface {
+export interface characterInterface {
   name: string;
   image: string;
   default?: boolean;
@@ -11,11 +11,10 @@ interface stageInterface {
   height: string;
 }
 
-interface roomConfigInterface {
+export interface roomConfigInterface {
   id: string;
   name: string;
   gameName: string;
-  bestOf: number;
   numberOfBans: number;
   winnerCharacterLocked: boolean;
   legalCharacters: characterInterface[];
@@ -24,12 +23,17 @@ interface roomConfigInterface {
   bannedStages: stageInterface[];
 }
 
+export const fallbackCharacter: characterInterface = {
+  name: "All",
+  image: "https://i.imgur.com/mgwDy0f.png",
+  default: true,
+};
+
 export const roomConfigs: roomConfigInterface[] = [
   {
     id: "clkp7ja74000008ju9zmg06n6",
     name: "LLB Stadium Ruleset",
     gameName: "LLB",
-    bestOf: 3,
     numberOfBans: 2,
     winnerCharacterLocked: true,
     legalCharacters: [
@@ -117,7 +121,6 @@ export const roomConfigs: roomConfigInterface[] = [
     id: "clkp7jt33000108ju86xxdl51",
     name: "LLB hyhy Ruleset",
     gameName: "LLB",
-    bestOf: 3,
     numberOfBans: 2,
     winnerCharacterLocked: true,
     legalCharacters: [

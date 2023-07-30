@@ -58,6 +58,9 @@ model StrikerRoom {
   selectedStage       Int       @default(0)
   currentBans         String    @default("")
   firstBan            Int       @default(0)
+  configId            String    @default("")
+  bestOf              Int       @default(3)
+  steamUrl        String?
 
   @@index([p1Id])
   @@index([p2Id])
