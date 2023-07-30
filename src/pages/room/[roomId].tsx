@@ -128,29 +128,54 @@ const Home: NextPage = () => {
       });
       pusher.bind(
         "set-character",
-        (data: { character: Character; playerNumber: number }) => {
-          if (data.playerNumber === 1) {
-            setStateP1Character(
-              roomConfig.legalCharacters.find((x) => x.name === data.character)
-            );
-          } else {
-            setStateP2Character(
-              roomConfig.legalCharacters.find((x) => x.name === data.character)
+        (data: {
+          character: Character;
+          playerNumber: number;
+          requester: string;
+        }) => {
+          if (session?.user.id !== data.requester) {
+            if (data.playerNumber === 1) {
+              setStateP1Character(
+                roomConfig.legalCharacters.find(
+                  (x) => x.name === data.character
+                )
+              );
+            } else {
+              setStateP2Character(
+                roomConfig.legalCharacters.find(
+                  (x) => x.name === data.character
+                )
+              );
+            }
+          }
+        }
+      );
+      pusher.bind(
+        "set-current-bans",
+        (data: { currentBans: string; requester: string }) => {
+          if (session?.user.id !== data.requester) {
+            setStateCurrentBans(bansStringToList(data.currentBans));
+          }
+        }
+      );
+      pusher.bind(
+        "set-selected-stage",
+        (data: { selectedStage: number; requester: string }) => {
+          if (session?.user.id !== data.requester) {
+            setStateSelectedStage(data.selectedStage);
+          }
+        }
+      );
+      pusher.bind(
+        "set-current-score",
+        (data: { currentScore: string; requester: string }) => {
+          if (session?.user.id !== data.requester) {
+            setStateCurrentScore(
+              data.currentScore.split(",").map(Number) as [number, number]
             );
           }
         }
       );
-      pusher.bind("set-current-bans", (data: { currentBans: string }) => {
-        setStateCurrentBans(bansStringToList(data.currentBans));
-      });
-      pusher.bind("set-selected-stage", (data: { selectedStage: number }) => {
-        setStateSelectedStage(data.selectedStage);
-      });
-      pusher.bind("set-current-score", (data: { currentScore: string }) => {
-        setStateCurrentScore(
-          data.currentScore.split(",").map(Number) as [number, number]
-        );
-      });
       pusher.bind(
         "set-most-recent-winner",
         (data: { mostRecentWinner: number }) => {

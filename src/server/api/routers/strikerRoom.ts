@@ -111,6 +111,7 @@ export const strikerRoomRouter = createTRPCRouter({
         "set-current-score",
         {
           currentScore: input.currentScore,
+          requester: ctx.session.user.id,
         }
       );
       return setCurrentScore;
@@ -131,6 +132,7 @@ export const strikerRoomRouter = createTRPCRouter({
       await pusherServerClient.trigger(`room-${input.id}`, "set-character", {
         character: input.character,
         playerNumber: input.playerNumber,
+        requester: ctx.session.user.id,
       });
       return setCharacter;
     }),
@@ -218,6 +220,7 @@ export const strikerRoomRouter = createTRPCRouter({
         "set-selected-stage",
         {
           selectedStage: input.selectedStage,
+          requester: ctx.session.user.id,
         }
       );
       return setSelectedStage;
@@ -236,6 +239,7 @@ export const strikerRoomRouter = createTRPCRouter({
       });
       await pusherServerClient.trigger(`room-${input.id}`, "set-current-bans", {
         currentBans: input.currentBans,
+        requester: ctx.session.user.id,
       });
       return setCurrentBans;
     }),
