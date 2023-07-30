@@ -44,6 +44,7 @@ const Home: NextPage = () => {
   const [mostRecentWinner, setStateMostRecentWinner] = useState(-1);
   const [selectedStage, setStateSelectedStage] = useState(0);
   const [currentBans, setStateCurrentBans] = useState<number[]>([]);
+  const [firstBan, setStateFirstBan] = useState<number>(0);
 
   const [iAmPlayer, setIAmPlayer] = useState<number | null>(null);
 
@@ -78,6 +79,7 @@ const Home: NextPage = () => {
           setStateMostRecentWinner(data.mostRecentWinner);
           setStateSelectedStage(data.selectedStage);
           setStateCurrentBans(bansStringToList(data.currentBans));
+          setStateFirstBan(data.firstBan);
 
           if (data.p1Id === session?.user.id) {
             setIAmPlayer(1);
@@ -155,6 +157,9 @@ const Home: NextPage = () => {
           setStateMostRecentWinner(data.mostRecentWinner);
         }
       );
+      pusher.bind("set-first-ban", (data: { firstBan: number }) => {
+        setStateFirstBan(data.firstBan);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.id]);
@@ -290,12 +295,12 @@ const Home: NextPage = () => {
         (((currentBans.length - 1) % 4) + 4) % 4 === 0 ||
         (((currentBans.length - 2) % 4) + 4) % 4 === 0
       ) {
-        setCurrentBanner(1);
+        setCurrentBanner(firstBan === 1 ? 2 : 1);
       } else {
-        setCurrentBanner(2);
+        setCurrentBanner(firstBan === 1 ? 1 : 2);
       }
     }
-  }, [currentBans, mostRecentWinner]);
+  }, [currentBans, firstBan, mostRecentWinner]);
 
   if (typeof query.roomId !== "string") return <p>Bad ID</p>;
 
@@ -320,6 +325,39 @@ const Home: NextPage = () => {
             <div className="md:leading-14 flex w-auto flex-1 justify-center break-all text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
               {room.p2?.name ?? "..."}
             </div>
+          </div>
+
+          <div className="mt-8 flex flex-col items-center">
+            <div>{roomConfig.name}</div>
+            <div>Best of {roomConfig.bestOf}</div>
+            <div>{roomConfig.numberOfBans} Bans</div>
+            <div>
+              Character Locked: {roomConfig.winnerCharacterLocked ? "✅" : "❌"}
+            </div>
+            <div>
+              RPS Winner:{" "}
+              {room.firstBan === 0
+                ? "Random"
+                : room.firstBan === 1
+                ? room.p1.name
+                : room.p2?.name}
+            </div>
+            <div className="mt-4">Legal Stages:</div>
+            <div className="grid grid-cols-3 gap-x-4">
+              {roomConfig.legalStages.map((stage, idx) => (
+                <li key={`stage-${idx}`}>{stage.name}</li>
+              ))}
+            </div>
+            {roomConfig.counterpickStages.length > 0 && (
+              <>
+                <div className="mt-4">Counterpick Stages:</div>
+                <div className="grid grid-cols-3 gap-x-4">
+                  {roomConfig.legalStages.map((stage, idx) => (
+                    <li key={`stage-${idx}`}>{stage.name}</li>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </>
       );
@@ -363,7 +401,40 @@ const Home: NextPage = () => {
           </div>
         </div>
 
-        <div className="flex justify-center">
+        <div className="mt-8 flex flex-col items-center">
+          <div>{roomConfig.name}</div>
+          <div>Best of {roomConfig.bestOf}</div>
+          <div>{roomConfig.numberOfBans} Bans</div>
+          <div>
+            Character Locked: {roomConfig.winnerCharacterLocked ? "✅" : "❌"}
+          </div>
+          <div>
+            RPS Winner:{" "}
+            {room.firstBan === 0
+              ? "Random"
+              : room.firstBan === 1
+              ? room.p1.name
+              : room.p2?.name}
+          </div>
+          <div className="mt-4">Legal Stages:</div>
+          <div className="grid grid-cols-3 gap-x-4">
+            {roomConfig.legalStages.map((stage, idx) => (
+              <li key={`stage-${idx}`}>{stage.name}</li>
+            ))}
+          </div>
+          {roomConfig.counterpickStages.length > 0 && (
+            <>
+              <div className="mt-4">Counterpick Stages:</div>
+              <div className="grid grid-cols-3 gap-x-4">
+                {roomConfig.legalStages.map((stage, idx) => (
+                  <li key={`stage-${idx}`}>{stage.name}</li>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="mt-4 flex justify-center">
           {room.p1Id === session?.user.id ? (
             <button
               className="rounded bg-green-500 px-4
@@ -373,7 +444,7 @@ const Home: NextPage = () => {
                 handleSetRoomStatus("Active");
               }}
             >
-              Start?
+              Start
             </button>
           ) : (
             <div>Waiting for {room.p1.name} to start</div>
@@ -435,10 +506,6 @@ const Home: NextPage = () => {
           {currentScore[1]}
         </h1>
       </div>
-
-      {/* Ask user who will be going first - us, them, or random
-          Confirm correct settings config */}
-      {roomState === 0 && <div></div>}
 
       {/* Blind character selection */}
       {roomState === 1 && (

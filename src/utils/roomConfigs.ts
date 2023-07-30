@@ -12,6 +12,7 @@ interface stageInterface {
 }
 
 interface roomConfigInterface {
+  id: string;
   name: string;
   gameName: string;
   bestOf: number;
@@ -25,6 +26,7 @@ interface roomConfigInterface {
 
 export const roomConfigs: roomConfigInterface[] = [
   {
+    id: "clkp7ja74000008ju9zmg06n6",
     name: "LLB Stadium Ruleset",
     gameName: "LLB",
     bestOf: 3,
@@ -112,6 +114,7 @@ export const roomConfigs: roomConfigInterface[] = [
     ],
   },
   {
+    id: "clkp7jt33000108ju86xxdl51",
     name: "LLB hyhy Ruleset",
     gameName: "LLB",
     bestOf: 3,
@@ -201,10 +204,12 @@ export const roomConfigs: roomConfigInterface[] = [
   },
 ];
 
-export const getConfigNamesByGame = (game: string): string[] => {
+export const getConfigNamesByGame = (
+  game: string
+): { id: string; name: string }[] => {
   return roomConfigs
     .filter((config) => config.gameName === game)
-    .map((config) => config.name);
+    .map((config) => ({ id: config.id, name: config.name }));
 };
 
 export const getConfigByName = (name: string): roomConfigInterface => {

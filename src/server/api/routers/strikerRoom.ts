@@ -4,6 +4,10 @@ import { z } from "zod";
 import { pusherServerClient } from "../../common/pusher";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
+function randomIntFromIntervalInc(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
 export const strikerRoomRouter = createTRPCRouter({
   createRoom: protectedProcedure.mutation(async ({ ctx }) => {
     const exists = await ctx.prisma.strikerRoom.findFirst({
@@ -24,6 +28,14 @@ export const strikerRoomRouter = createTRPCRouter({
       },
     });
   }),
+  getIncompleteRoomsByUserId: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.strikerRoom.findMany({
+      where: {
+        p1Id: ctx.session.user.id,
+        roomStatus: { in: ["Active", "Inactive"] },
+      },
+    });
+  }),
   getRoomById: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .query(async ({ ctx, input }) => {
@@ -38,8 +50,9 @@ export const strikerRoomRouter = createTRPCRouter({
   setP2Id: protectedProcedure
     .input(z.object({ id: z.string().cuid(), p2Id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
+      const firstBan = randomIntFromIntervalInc(1, 2);
       const setP2Id = await ctx.prisma.strikerRoom.update({
-        data: { p2Id: input.p2Id },
+        data: { p2Id: input.p2Id, firstBan },
         where: { id: input.id },
       });
       await pusherServerClient.trigger(`room-${input.id}`, "set-p2-id", {

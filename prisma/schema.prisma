@@ -57,6 +57,7 @@ model StrikerRoom {
   mostRecentWinner    Int       @default(-1)
   selectedStage       Int       @default(0)
   currentBans         String    @default("")
+  firstBan            Int       @default(0)
 
   @@index([p1Id])
   @@index([p2Id])
