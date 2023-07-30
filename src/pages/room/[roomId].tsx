@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { pusherClient } from "~/server/common/pusherClient";
 import { api } from "~/utils/api";
-import { getConfigByName } from "~/utils/roomConfigs";
+import { getConfigById } from "~/utils/roomConfigs";
 
 const firstMissingNumber = (current: number[], length: number): number => {
   const currentSorted = current.sort();
@@ -21,7 +21,7 @@ const bansStringToList = (bans: string): number[] => {
   return bans.split(",").map(Number);
 };
 
-const roomConfig = getConfigByName("LLB Stadium Ruleset");
+const roomConfig = getConfigById("clkp7ja74000008ju9zmg06n6");
 
 const Home: NextPage = () => {
   const { data: session } = useSession();

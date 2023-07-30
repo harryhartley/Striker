@@ -217,3 +217,9 @@ export const getConfigByName = (name: string): roomConfigInterface => {
   if (!config) return roomConfigs[0]!;
   return config;
 };
+
+export const getConfigById = (id: string): roomConfigInterface => {
+  const config = roomConfigs.find((config) => config.id === id);
+  if (!config) return roomConfigs[0]!;
+  return config;
+};
