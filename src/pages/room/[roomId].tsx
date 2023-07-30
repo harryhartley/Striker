@@ -160,6 +160,9 @@ const Home: NextPage = () => {
       pusher.bind("set-first-ban", (data: { firstBan: number }) => {
         setStateFirstBan(data.firstBan);
       });
+      pusher.bind("cancel-room", () => {
+        setStateRoomStatus("Canceled");
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.id]);

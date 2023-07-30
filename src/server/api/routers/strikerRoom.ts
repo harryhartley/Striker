@@ -28,6 +28,19 @@ export const strikerRoomRouter = createTRPCRouter({
       },
     });
   }),
+  cancelRoom: protectedProcedure
+    .input(z.object({ id: z.string().cuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const cancelRoom = await ctx.prisma.strikerRoom.deleteMany({
+        where: {
+          id: input.id,
+          p1Id: ctx.session.user.id,
+          roomStatus: { in: ["Active", "Inactive"] },
+        },
+      });
+      await pusherServerClient.trigger(`room-${input.id}`, "cancel-room", {});
+      return cancelRoom;
+    }),
   getIncompleteRoomsByUserId: protectedProcedure.query(async ({ ctx }) => {
     return ctx.prisma.strikerRoom.findMany({
       where: {

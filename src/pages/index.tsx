@@ -5,16 +5,32 @@ import { api } from "~/utils/api";
 
 const Home: NextPage = () => {
   const { push } = useRouter();
-  const { data: rooms, isLoading: loadingRooms } =
-    api.strikerRoom.getIncompleteRoomsByUserId.useQuery();
+
+  const {
+    data: rooms,
+    isLoading: loadingRooms,
+    refetch,
+  } = api.strikerRoom.getIncompleteRoomsByUserId.useQuery(undefined, {
+    refetchOnWindowFocus: false,
+  });
+
   const createStrikerRoom = api.strikerRoom.createRoom.useMutation({
     async onSuccess(data) {
       await push(`/room/${data.id}`);
     },
   });
+  const cancelStrikerRoom = api.strikerRoom.cancelRoom.useMutation({
+    async onSuccess() {
+      await refetch();
+    },
+  });
 
   const handleSubmit = () => {
     createStrikerRoom.mutate();
+  };
+
+  const handleCancel = (id: string) => {
+    cancelStrikerRoom.mutate({ id });
   };
 
   return (
@@ -33,9 +49,12 @@ const Home: NextPage = () => {
         <div className="flex flex-col items-center gap-4">
           <div>Your Active Rooms</div>
           {rooms?.map((room, idx) => (
-            <button key={idx} onClick={() => void push(`/room/${room.id}`)}>
-              {room.id}
-            </button>
+            <div key={idx} className="flex gap-2">
+              <button onClick={() => void push(`/room/${room.id}`)}>
+                {room.id}
+              </button>
+              <button onClick={() => handleCancel(room.id)}>❌</button>
+            </div>
           ))}
         </div>
       )}
