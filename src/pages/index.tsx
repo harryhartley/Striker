@@ -50,8 +50,8 @@ const Home: NextPage = () => {
 
   return (
     <div className="mt-4 flex flex-col justify-center">
-      <div className="mb-8 flex justify-center pb-2 text-4xl font-bold leading-8 tracking-tight">
-        STRKR
+      <div className="mb-8 flex justify-center pb-2 text-6xl leading-8 tracking-tight">
+        Striker
       </div>
       {loadingRooms ? (
         <BeatLoader />
@@ -65,7 +65,7 @@ const Home: NextPage = () => {
                   <select {...register("configId")}>
                     {getConfigNamesByGame("LLB").map((config, idx) => (
                       <option key={`config-${idx}`} value={config.id}>
-                        {config.name}
+                        {config.name} ({config.description})
                       </option>
                     ))}
                   </select>
@@ -74,21 +74,26 @@ const Home: NextPage = () => {
                   <label>Best Of:</label>
                   <select {...register("bestOf")}>
                     <option value={1}>1</option>
-                    <option value={3}>3</option>
+                    <option selected value={3}>
+                      3
+                    </option>
                     <option value={5}>5</option>
                     <option value={7}>7</option>
                     <option value={9}>9</option>
                   </select>
                 </div>
-                <div className="flex gap-2">
-                  <label>Steam Game URL:</label>
-                  <input {...register("steamUrl")} />
+                <div className="flex items-center gap-2 align-middle">
+                  <label>Lobby URL:</label>
+                  <input
+                    {...register("steamUrl")}
+                    className="rounded-lg border-2"
+                  />
                 </div>
               </div>
             </form>
             <button
               className="rounded bg-green-500 px-4
-             py-2 text-4xl font-bold text-white hover:bg-green-700"
+             py-2 text-4xl text-white hover:bg-green-700"
               onClick={handleCreate}
             >
               Create a room

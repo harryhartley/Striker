@@ -74,6 +74,17 @@ export const strikerRoomRouter = createTRPCRouter({
   setP2Id: protectedProcedure
     .input(z.object({ id: z.string().cuid(), p2Id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
+      const p2Exists = await ctx.prisma.strikerRoom.findFirst({
+        where: {
+          id: input.id,
+        },
+      });
+      if (p2Exists?.p2Id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "P2 already exists",
+        });
+      }
       const firstBan = randomIntFromIntervalInc(1, 2);
       const setP2Id = await ctx.prisma.strikerRoom.update({
         data: { p2Id: input.p2Id, firstBan },
@@ -85,6 +96,7 @@ export const strikerRoomRouter = createTRPCRouter({
       return setP2Id;
     }),
   setRoomStatus: protectedProcedure
+    // need some serverside validation here, not sure how to do it
     .input(
       z.object({ id: z.string().cuid(), roomStatus: z.nativeEnum(RoomStatus) })
     )

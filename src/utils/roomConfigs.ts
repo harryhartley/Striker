@@ -14,6 +14,7 @@ interface stageInterface {
 export interface roomConfigInterface {
   id: string;
   name: string;
+  description: string;
   gameName: string;
   numberOfBans: number;
   winnerCharacterLocked: boolean;
@@ -32,7 +33,8 @@ export const fallbackCharacter: characterInterface = {
 export const roomConfigs: roomConfigInterface[] = [
   {
     id: "clkp7ja74000008ju9zmg06n6",
-    name: "LLB Stadium Ruleset",
+    name: "Stadium Ruleset",
+    description: "All stages legal",
     gameName: "LLB",
     numberOfBans: 2,
     winnerCharacterLocked: true,
@@ -119,7 +121,8 @@ export const roomConfigs: roomConfigInterface[] = [
   },
   {
     id: "clkp7jt33000108ju86xxdl51",
-    name: "LLB hyhy Ruleset",
+    name: "UK Ruleset",
+    description: "5 starters, 4 counterpicks",
     gameName: "LLB",
     numberOfBans: 2,
     winnerCharacterLocked: true,
@@ -209,10 +212,14 @@ export const roomConfigs: roomConfigInterface[] = [
 
 export const getConfigNamesByGame = (
   game: string
-): { id: string; name: string }[] => {
+): { id: string; name: string; description: string }[] => {
   return roomConfigs
     .filter((config) => config.gameName === game)
-    .map((config) => ({ id: config.id, name: config.name }));
+    .map((config) => ({
+      id: config.id,
+      name: config.name,
+      description: config.description,
+    }));
 };
 
 export const getConfigByName = (name: string): roomConfigInterface => {

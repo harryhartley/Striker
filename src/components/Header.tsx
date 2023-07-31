@@ -2,6 +2,7 @@
 import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { BeatLoader } from "react-spinners";
+import { ThemeSwitch } from "./ThemeSwitch";
 
 export const Header = () => {
   const { data: sessionData, status: sessionStatus } = useSession();
@@ -9,7 +10,9 @@ export const Header = () => {
 
   return (
     <header className="flex items-center justify-between py-10">
-      <div></div>
+      <div>
+        <a href={"/"}>STRKR</a>
+      </div>
       <div className="flex items-center text-base leading-5">
         {sessionStatus === "loading" ? (
           <BeatLoader />
@@ -65,6 +68,8 @@ export const Header = () => {
             Sign in
           </div>
         )}
+
+        <ThemeSwitch />
       </div>
     </header>
   );

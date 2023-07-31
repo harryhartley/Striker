@@ -30,7 +30,19 @@ const bansStringToList = (bans: string): number[] => {
 const Home: NextPage = () => {
   const { data: session } = useSession();
 
-  const { query } = useRouter();
+  const { query, events } = useRouter();
+
+  useEffect(() => {
+    const exitingFunction = () => {
+      pusherClient.unsubscribe(`room-${query.roomId as string}`);
+    };
+
+    events.on("routeChangeStart", exitingFunction);
+
+    return () => {
+      events.off("routeChangeStart", exitingFunction);
+    };
+  }, [events, query.roomId]);
 
   const [roomStatus, setStateRoomStatus] = useState<RoomStatus>("Inactive");
   const [roomState, setStateRoomState] = useState(0);
@@ -107,6 +119,7 @@ const Home: NextPage = () => {
   const [roomConfig, setStateRoomConfig] = useState<roomConfigInterface>({
     id: "",
     name: "",
+    description: "",
     gameName: "",
     numberOfBans: 0,
     winnerCharacterLocked: false,
@@ -428,7 +441,7 @@ const Home: NextPage = () => {
           <button
             onClick={() => handleSetP2Id()}
             className="rounded bg-green-500 px-4
-             py-2 text-4xl font-bold text-white hover:bg-green-700"
+             py-2 text-4xl text-white hover:bg-green-700"
           >
             Join {room.p1.name}&apos;s room?
           </button>
@@ -497,7 +510,7 @@ const Home: NextPage = () => {
           {room.p1Id === session?.user.id ? (
             <button
               className="rounded bg-green-500 px-4
-             py-2 text-4xl font-bold text-white hover:bg-green-700"
+             py-2 text-4xl  text-white hover:bg-green-700"
               onClick={() => {
                 handleSetRoomState(1); // remove this when state 0 is implemented
                 handleSetRoomStatus("Active");
@@ -525,10 +538,10 @@ const Home: NextPage = () => {
     <>
       {roomStatus === "Complete" && (
         <>
-          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">
+          <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             Match Complete
           </h2>
-          <h2 className="flex justify-center pb-2 text-xl font-bold leading-8 tracking-tight">
+          <h2 className="flex justify-center pb-2 text-xl  leading-8 tracking-tight">
             Report your match result now!
           </h2>
         </>
@@ -555,13 +568,13 @@ const Home: NextPage = () => {
         </div>
       </div>
       <div className="flex items-end justify-center gap-4 space-y-2 pb-6 md:space-y-5">
-        <h1 className="md:leading-14 text-xl font-bold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
+        <h1 className="md:leading-14 text-xl  leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
           {currentScore[0]}
         </h1>
-        <h1 className="md:leading-14 text-xl font-bold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
+        <h1 className="md:leading-14 text-xl  leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
           -
         </h1>
-        <h1 className="md:leading-14 text-xl font-bold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
+        <h1 className="md:leading-14 text-xl  leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
           {currentScore[1]}
         </h1>
       </div>
@@ -569,7 +582,7 @@ const Home: NextPage = () => {
       {/* Blind character selection */}
       {roomState === 1 && (
         <>
-          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">
+          <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             {iAmPlayer === 1 ? room.p1.name : room.p2?.name}: Pick your
             character
           </h2>
@@ -594,7 +607,7 @@ const Home: NextPage = () => {
                   : p2CharacterLocked
                   ? "bg-red-500"
                   : "bg-green-500"
-              } px-4 py-2 text-2xl font-bold text-white`}
+              } px-4 py-2 text-2xl text-white`}
             >
               {iAmPlayer === 1
                 ? p1CharacterLocked
@@ -642,7 +655,7 @@ const Home: NextPage = () => {
       {/* Stage striking */}
       {roomState === 2 && (
         <>
-          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">
+          <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             {currentBanner === 1 ? room.p1.name : room.p2?.name}: Ban{" "}
             {currentBans.length % 2 === 0 ||
             currentBans.length === roomConfig.legalStages.length - 2
@@ -650,7 +663,7 @@ const Home: NextPage = () => {
               : "2 stages"}
           </h2>
           <div className="grid gap-4">
-            <div className="relative font-bold text-white">
+            <div className="relative  text-white">
               <img
                 className="rounded-lg"
                 src={roomConfig.legalStages[selectedStage]?.image}
@@ -682,7 +695,7 @@ const Home: NextPage = () => {
                       handleSetCurrentBans("");
                     }
                   }}
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded bg-red-500 px-4 py-2 text-4xl font-bold text-white hover:bg-red-700"
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded bg-red-500 px-4 py-2 text-4xl  text-white hover:bg-red-700"
                 >
                   BAN
                 </button>
@@ -712,7 +725,7 @@ const Home: NextPage = () => {
                     alt={stage.name}
                   />
                   {currentBans.includes(idx) && (
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded px-4 py-2 text-4xl font-bold text-red-500 sm:text-lg md:text-2xl lg:text-4xl">
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded px-4 py-2 text-4xl  text-red-500 sm:text-lg md:text-2xl lg:text-4xl">
                       BANNED
                     </div>
                   )}
@@ -726,11 +739,11 @@ const Home: NextPage = () => {
       {/* Wait for game result - can only report a game loss */}
       {roomState === 3 && (
         <>
-          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">
+          <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             Game {currentScore[0] + currentScore[1] + 1} - Report Score
           </h2>
           {steamUrl && (
-            <div className="flex justify-center pb-2 text-xl font-bold leading-8 tracking-tight">
+            <div className="flex justify-center pb-2 text-xl  leading-8 tracking-tight">
               <Link href={steamUrl}>Join Game Room: {steamUrl}</Link>
             </div>
           )}
@@ -755,7 +768,7 @@ const Home: NextPage = () => {
                   iAmPlayer === 1
                     ? "bg-slate-500"
                     : "bg-green-500 hover:bg-green-700"
-                } px-4 py-2 text-4xl font-bold text-white`}
+                } px-4 py-2 text-4xl  text-white`}
               >
                 {room.p1.name}
               </button>
@@ -778,12 +791,12 @@ const Home: NextPage = () => {
                   iAmPlayer === 2
                     ? "bg-slate-500"
                     : "bg-green-500 hover:bg-green-700"
-                } px-4 py-2 text-4xl font-bold text-white`}
+                } px-4 py-2 text-4xl  text-white`}
               >
                 {room.p2?.name}
               </button>
             </div>
-            <div className="relative font-bold text-white">
+            <div className="relative  text-white">
               {/* set the correct stage being played! */}
               <img
                 className="rounded-lg"
@@ -805,7 +818,7 @@ const Home: NextPage = () => {
       {/* W picks character first, L picks character second */}
       {roomState === 4 && (
         <>
-          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">
+          <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             {mostRecentWinner === 1
               ? p1CharacterLocked
                 ? room.p2?.name
@@ -836,7 +849,7 @@ const Home: NextPage = () => {
                   : p2CharacterLocked
                   ? "bg-red-500"
                   : "bg-green-500"
-              } px-4 py-2 text-2xl font-bold text-white`}
+              } px-4 py-2 text-2xl  text-white`}
             >
               {iAmPlayer === 1
                 ? p1CharacterLocked
@@ -886,7 +899,7 @@ const Home: NextPage = () => {
       {/* W bans stages, L picks stage */}
       {roomState === 5 && (
         <>
-          <h2 className="flex justify-center pb-2 text-2xl font-bold leading-8 tracking-tight">
+          <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             {(mostRecentWinner === 1 &&
               currentBans.length !== roomConfig.numberOfBans) ||
             (mostRecentWinner === 2 &&
@@ -901,7 +914,7 @@ const Home: NextPage = () => {
               : `${roomConfig.numberOfBans - currentBans.length} stages`}
           </h2>
           <div className="grid gap-4">
-            <div className="relative font-bold text-white">
+            <div className="relative  text-white">
               <img
                 className="rounded-lg"
                 src={roomConfig.legalStages[selectedStage]?.image}
@@ -935,7 +948,7 @@ const Home: NextPage = () => {
                     currentBans.length === roomConfig.numberOfBans
                       ? "bg-green-500 hover:bg-green-700"
                       : "bg-red-500 hover:bg-red-700"
-                  } absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded px-4 py-2 font-bold text-white`}
+                  } absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded px-4 py-2  text-white`}
                 >
                   {currentBans.length === roomConfig.numberOfBans
                     ? "PICK"
@@ -964,7 +977,7 @@ const Home: NextPage = () => {
                     alt={stage.name}
                   />
                   {currentBans.includes(idx) && (
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded px-4 py-2 text-4xl font-bold text-red-500 sm:text-lg md:text-2xl lg:text-4xl">
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded px-4 py-2 text-4xl  text-red-500 sm:text-lg md:text-2xl lg:text-4xl">
                       BANNED
                     </div>
                   )}
