@@ -587,36 +587,38 @@ const Home: NextPage = () => {
             character
           </h2>
           <div className="flex flex-col items-center gap-2">
-            <button
-              onClick={() => {
-                if (iAmPlayer === 1) {
-                  if (!p1CharacterLocked) {
-                    handleSetCharacterLocked(1, true);
+            {iAmPlayer && 
+              <button
+                onClick={() => {
+                  if (iAmPlayer === 1) {
+                    if (!p1CharacterLocked) {
+                      handleSetCharacterLocked(1, true);
+                    }
+                  } else if (iAmPlayer === 2) {
+                    if (!p2CharacterLocked) {
+                      handleSetCharacterLocked(2, true);
+                    }
                   }
-                } else {
-                  if (!p2CharacterLocked) {
-                    handleSetCharacterLocked(2, true);
-                  }
-                }
-              }}
-              className={`rounded ${
-                iAmPlayer === 1
-                  ? p1CharacterLocked
+                }}
+                className={`rounded ${
+                  iAmPlayer === 1
+                    ? p1CharacterLocked
+                      ? "bg-red-500"
+                      : "bg-green-500"
+                    : p2CharacterLocked
                     ? "bg-red-500"
                     : "bg-green-500"
+                } px-4 py-2 text-2xl text-white`}
+              >
+                {iAmPlayer === 1
+                  ? p1CharacterLocked
+                    ? "LOCKED"
+                    : "LOCK IN"
                   : p2CharacterLocked
-                  ? "bg-red-500"
-                  : "bg-green-500"
-              } px-4 py-2 text-2xl text-white`}
-            >
-              {iAmPlayer === 1
-                ? p1CharacterLocked
                   ? "LOCKED"
-                  : "LOCK IN"
-                : p2CharacterLocked
-                ? "LOCKED"
-                : "LOCK IN"}
-            </button>
+                  : "LOCK IN"}
+              </button>
+            }
             <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-10">
               {roomConfig.legalCharacters.map((character, idx) => (
                 <div
@@ -630,7 +632,7 @@ const Home: NextPage = () => {
                         // );
                         handleSetCharacter(1, character.name as Character);
                       }
-                    } else {
+                    } else if (iAmPlayer === 2) {
                       if (!p2CharacterLocked) {
                         // setStateP2Character(
                         //   roomConfig.legalCharacters.find(
@@ -742,15 +744,16 @@ const Home: NextPage = () => {
           <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             Game {currentScore[0] + currentScore[1] + 1} - Report Score
           </h2>
-          {steamUrl && (
+          {steamUrl && iAmPlayer && (
             <div className="flex justify-center pb-2 text-xl  leading-8 tracking-tight">
               <Link href={steamUrl}>Join Game Room: {steamUrl}</Link>
             </div>
           )}
           <div className="grid gap-4">
+            {iAmPlayer && 
             <div className="grid grid-cols-2 gap-4">
               <button
-                disabled={iAmPlayer === 1}
+                disabled={!iAmPlayer || iAmPlayer === 1}
                 onClick={() => {
                   handleSetCurrentScore([currentScore[0] + 1, currentScore[1]]);
                   handleSetMostRecentWinner(1);
@@ -773,7 +776,7 @@ const Home: NextPage = () => {
                 {room.p1.name}
               </button>
               <button
-                disabled={iAmPlayer === 2}
+                disabled={!iAmPlayer || iAmPlayer === 2}
                 onClick={() => {
                   handleSetCurrentScore([currentScore[0], currentScore[1] + 1]);
                   handleSetMostRecentWinner(2);
@@ -795,20 +798,19 @@ const Home: NextPage = () => {
               >
                 {room.p2?.name}
               </button>
-            </div>
+            </div>}
             <div className="relative  text-white">
-              {/* set the correct stage being played! */}
               <img
                 className="rounded-lg"
-                src={roomConfig.legalStages[selectedStage]?.image}
-                alt={roomConfig.legalStages[selectedStage]?.name}
+                src={[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.image}
+                alt={[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.name}
               />
               <div className="absolute bottom-2 left-4 text-lg sm:text-3xl">
-                {roomConfig.legalStages[selectedStage]?.name}
+                {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.name}
               </div>
               <div className="absolute bottom-2 right-4 text-lg sm:text-3xl">
-                Width: {roomConfig.legalStages[selectedStage]?.width} Height:{" "}
-                {roomConfig.legalStages[selectedStage]?.height}
+                Width: {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.width} Height:{" "}
+                {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.height}
               </div>
             </div>
           </div>
@@ -829,13 +831,14 @@ const Home: NextPage = () => {
             : Change your character?
           </h2>
           <div className="flex flex-col items-center gap-2">
+            { iAmPlayer && 
             <button
               onClick={() => {
                 if (iAmPlayer === 1) {
                   if (!p1CharacterLocked) {
                     handleSetCharacterLocked(1, true);
                   }
-                } else {
+                } else if (iAmPlayer === 2) {
                   if (!p2CharacterLocked) {
                     handleSetCharacterLocked(2, true);
                   }
@@ -858,7 +861,7 @@ const Home: NextPage = () => {
                 : p2CharacterLocked
                 ? "LOCKED"
                 : "LOCK IN"}
-            </button>
+            </button>}
             <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-10">
               {roomConfig.legalCharacters.map((character, idx) => (
                 <div
@@ -867,23 +870,11 @@ const Home: NextPage = () => {
                       if (!p1CharacterLocked) {
                         handleSetCharacter(1, character.name as Character);
                       }
-                    } else {
+                    } else if (iAmPlayer === 2) {
                       if (!p2CharacterLocked) {
                         handleSetCharacter(2, character.name as Character);
                       }
                     }
-                    // if (
-                    //   (mostRecentWinner === 1 && !p1CharacterLocked) ||
-                    //   (mostRecentWinner === 2 && !p2CharacterLocked)
-                    // ) {
-                    //   if (iAmPlayer === 1) {
-                    //     handleSetCharacter(1, character.name as Character);
-                    //   }
-                    // } else {
-                    //   if (iAmPlayer === 2) {
-                    //     handleSetCharacter(2, character.name as Character);
-                    //   }
-                    // }
                   }}
                   className="relative"
                   key={`character-${idx}`}
@@ -917,15 +908,15 @@ const Home: NextPage = () => {
             <div className="relative  text-white">
               <img
                 className="rounded-lg"
-                src={roomConfig.legalStages[selectedStage]?.image}
-                alt={roomConfig.legalStages[selectedStage]?.name}
+                src={[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.image}
+                alt={[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.name}
               />
               <div className="absolute bottom-2 left-4 text-lg sm:text-3xl">
-                {roomConfig.legalStages[selectedStage]?.name}
+                {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.name}
               </div>
               <div className="absolute bottom-2 right-4 text-lg sm:text-3xl">
-                Width: {roomConfig.legalStages[selectedStage]?.width} Height:{" "}
-                {roomConfig.legalStages[selectedStage]?.height}
+                Width: {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.width} Height:{" "}
+                {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.height}
               </div>
               {iAmPlayer === currentBanner && (
                 <button
@@ -939,7 +930,7 @@ const Home: NextPage = () => {
                       handleSetSelectedStage(
                         firstMissingNumber(
                           newBans,
-                          roomConfig.legalStages.length
+                          [...roomConfig.legalStages, ...roomConfig.counterpickStages].length
                         )
                       );
                     }
@@ -957,10 +948,13 @@ const Home: NextPage = () => {
               )}
             </div>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-              {roomConfig.legalStages.map((stage, idx) => (
+              {[...roomConfig.legalStages, ...roomConfig.counterpickStages].map((stage, idx) => (
                 <div
                   onClick={() => {
-                    if (!currentBans.includes(idx)) {
+                    if (
+                      iAmPlayer === currentBanner && 
+                      !currentBans.includes(idx)
+                    ) {
                       handleSetSelectedStage(idx);
                     }
                   }}
