@@ -210,12 +210,32 @@ export const strikerRoomRouter = createTRPCRouter({
       z.object({
         id: z.string().cuid(),
         mostRecentWinner: z.number().int().min(1).max(2),
+        stageName: z.string(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       const setMostRecentWinner = await ctx.prisma.strikerRoom.update({
         data: { mostRecentWinner: input.mostRecentWinner },
         where: { id: input.id },
+      });
+      await ctx.prisma.strikerRoom.update({
+        where: { id: setMostRecentWinner.id },
+        data: {
+          games: {
+            create: {
+              number: setMostRecentWinner.currentScore
+                .split(",")
+                .map((score) => parseInt(score))
+                .reduce((a, b) => a + b, 0),
+              stageName: input.stageName,
+              p1Character: setMostRecentWinner.p1SelectedCharacter,
+              p2Character: setMostRecentWinner.p2SelectedCharacter,
+              p1Id: setMostRecentWinner.p1Id,
+              p2Id: setMostRecentWinner.p2Id ?? "",
+              winner: input.mostRecentWinner,
+            },
+          },
+        },
       });
       await pusherServerClient.trigger(
         `room-${input.id}`,
@@ -265,5 +285,66 @@ export const strikerRoomRouter = createTRPCRouter({
         requester: ctx.session.user.id,
       });
       return setCurrentBans;
+    }),
+  addGame: protectedProcedure
+    .input(
+      z.object({
+        roomId: z.string().cuid(),
+        number: z.number(),
+        stageName: z.string(),
+        p1Character: z.nativeEnum(Character),
+        p2Character: z.nativeEnum(Character),
+        p1Id: z.string().cuid(),
+        p2Id: z.string().cuid(),
+        winner: z.number(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.strikerRoom.update({
+        where: { id: input.roomId },
+        data: {
+          games: {
+            create: {
+              number: input.number,
+              stageName: input.stageName,
+              p1Character: input.p1Character,
+              p2Character: input.p2Character,
+              p1Id: input.p1Id,
+              p2Id: input.p2Id,
+              winner: input.winner,
+            },
+          },
+        },
+      });
+    }),
+  getRoomsByParticipationWithGames: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string().cuid(),
+        currentPage: z.number(),
+        pageSize: z.number(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      return ctx.prisma.strikerRoom.findMany({
+        where: {
+          OR: [
+            {
+              roomStatus: RoomStatus.Complete,
+              p1Id: input.userId,
+            },
+            {
+              roomStatus: RoomStatus.Complete,
+              p2Id: input.userId,
+            },
+          ],
+        },
+        skip: (input.currentPage - 1) * input.pageSize,
+        take: input.pageSize,
+        orderBy: [{ createdAt: "desc" }],
+        include: {
+          games: true,
+        },
+      });
     }),
 });

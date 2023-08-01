@@ -38,6 +38,26 @@ enum RoomStatus {
   Complete
 }
 
+model Game {
+  id        String   @id @default(cuid())
+  roomId  String
+  room    StrikerRoom @relation(fields: [roomId], references: [id])
+  createdAt DateTime @default(now())
+  number Int
+  stageName String
+  p1Character String
+  p2Character String
+  p1Id      String
+  p1        User     @relation("p1", fields: [p1Id], references: [id])
+  p2Id    String
+  p2        User?    @relation("p2", fields: [p2Id], references: [id])
+  winner  Int
+
+  @@index([roomId])
+  @@index([p1Id])
+  @@index([p2Id])
+}
+
 model StrikerRoom {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -61,6 +81,8 @@ model StrikerRoom {
   configId            String    @default("")
   bestOf              Int       @default(3)
   steamUrl        String?
+
+  games Game[]
 
   @@index([p1Id])
   @@index([p2Id])
@@ -114,7 +136,9 @@ model User {
   accounts      Account[]
   sessions      Session[]
   p1            StrikerRoom[] @relation("p1")
+  p1Games            Game[] @relation("p1")
   p2            StrikerRoom[] @relation("p2")
+  p2Games            Game[] @relation("p2")
 }
 
 model VerificationToken {

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { useIdleTimer } from "react-idle-timer";
 import { pusherClient } from "~/server/common/pusherClient";
 import { api } from "~/utils/api";
 import {
@@ -30,7 +31,7 @@ const bansStringToList = (bans: string): number[] => {
 const Home: NextPage = () => {
   const { data: session } = useSession();
 
-  const { query, events } = useRouter();
+  const { query, events, asPath } = useRouter();
 
   useEffect(() => {
     const exitingFunction = () => {
@@ -43,6 +44,16 @@ const Home: NextPage = () => {
       events.off("routeChangeStart", exitingFunction);
     };
   }, [events, query.roomId]);
+
+  const [disconnected, setStateDisconnected] = useState(false);
+
+  useIdleTimer({
+    timeout: 1000 * 60 * 5,
+    onIdle: () => {
+      pusherClient.unsubscribe(`room-${query.roomId as string}`);
+      setStateDisconnected(true);
+    },
+  });
 
   const [roomStatus, setStateRoomStatus] = useState<RoomStatus>("Inactive");
   const [roomState, setStateRoomState] = useState(0);
@@ -338,12 +349,16 @@ const Home: NextPage = () => {
   };
 
   const setMostRecentWinner = api.strikerRoom.setMostRecentWinner.useMutation();
-  const handleSetMostRecentWinner = (mostRecentWinner: number) => {
+  const handleSetMostRecentWinner = (
+    mostRecentWinner: number,
+    stageName: string
+  ) => {
     if (session) {
       setStateMostRecentWinner(mostRecentWinner);
       setMostRecentWinner.mutate({
         id: query.roomId as string,
         mostRecentWinner,
+        stageName,
       });
     }
   };
@@ -383,6 +398,8 @@ const Home: NextPage = () => {
   if (isLoading) return <div>Loading...</div>;
 
   if (!room) return <div>Room not found</div>;
+
+  if (disconnected) return <div>Disconnected due to inactivity</div>;
 
   // WAITING ROOM
 
@@ -429,6 +446,23 @@ const Home: NextPage = () => {
                   ))}
                 </div>
               </>
+            )}
+          </div>
+
+          <div className="mt-4 flex justify-center">
+            {room.p1Id === session?.user.id && (
+              <button
+                className="rounded bg-green-500 px-4
+             py-2 text-4xl  text-white hover:bg-green-700"
+                // eslint-disable-next-line @typescript-eslint/no-misused-promises
+                onClick={() =>
+                  navigator.clipboard.writeText(
+                    `https://striker.up.railway.app${asPath}`
+                  )
+                }
+              >
+                Copy Striker Link
+              </button>
             )}
           </div>
         </>
@@ -587,7 +621,7 @@ const Home: NextPage = () => {
             character
           </h2>
           <div className="flex flex-col items-center gap-2">
-            {iAmPlayer && 
+            {iAmPlayer && (
               <button
                 onClick={() => {
                   if (iAmPlayer === 1) {
@@ -618,7 +652,7 @@ const Home: NextPage = () => {
                   ? "LOCKED"
                   : "LOCK IN"}
               </button>
-            }
+            )}
             <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-10">
               {roomConfig.legalCharacters.map((character, idx) => (
                 <div
@@ -750,67 +784,108 @@ const Home: NextPage = () => {
             </div>
           )}
           <div className="grid gap-4">
-            {iAmPlayer && 
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                disabled={!iAmPlayer || iAmPlayer === 1}
-                onClick={() => {
-                  handleSetCurrentScore([currentScore[0] + 1, currentScore[1]]);
-                  handleSetMostRecentWinner(1);
-                  if (currentScore[0] === Math.floor(bestOf / 2)) {
-                    handleSetRoomStatus("Complete");
-                    handleSetRoomState(6);
-                  } else {
-                    if (roomConfig.winnerCharacterLocked) {
-                      handleSetCharacterLocked(1, true);
+            {iAmPlayer && (
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  disabled={!iAmPlayer || iAmPlayer === 1}
+                  onClick={() => {
+                    handleSetCurrentScore([
+                      currentScore[0] + 1,
+                      currentScore[1],
+                    ]);
+                    handleSetMostRecentWinner(
+                      1,
+                      [
+                        ...roomConfig.legalStages,
+                        ...roomConfig.counterpickStages,
+                      ][selectedStage]?.name ?? ""
+                    );
+                    if (currentScore[0] === Math.floor(bestOf / 2)) {
+                      handleSetRoomStatus("Complete");
+                      handleSetRoomState(6);
+                    } else {
+                      if (roomConfig.winnerCharacterLocked) {
+                        handleSetCharacterLocked(1, true);
+                      }
+                      handleSetRoomState(roomState + 1);
                     }
-                    handleSetRoomState(roomState + 1);
-                  }
-                }}
-                className={`rounded ${
-                  iAmPlayer === 1
-                    ? "bg-slate-500"
-                    : "bg-green-500 hover:bg-green-700"
-                } px-4 py-2 text-4xl  text-white`}
-              >
-                {room.p1.name}
-              </button>
-              <button
-                disabled={!iAmPlayer || iAmPlayer === 2}
-                onClick={() => {
-                  handleSetCurrentScore([currentScore[0], currentScore[1] + 1]);
-                  handleSetMostRecentWinner(2);
-                  if (currentScore[1] === Math.floor(bestOf / 2)) {
-                    handleSetRoomStatus("Complete");
-                    handleSetRoomState(6);
-                  } else {
-                    if (roomConfig.winnerCharacterLocked) {
-                      handleSetCharacterLocked(2, true);
+                  }}
+                  className={`rounded ${
+                    iAmPlayer === 1
+                      ? "bg-slate-500"
+                      : "bg-green-500 hover:bg-green-700"
+                  } px-4 py-2 text-4xl  text-white`}
+                >
+                  {room.p1.name}
+                </button>
+                <button
+                  disabled={!iAmPlayer || iAmPlayer === 2}
+                  onClick={() => {
+                    handleSetCurrentScore([
+                      currentScore[0],
+                      currentScore[1] + 1,
+                    ]);
+                    handleSetMostRecentWinner(
+                      2,
+                      [
+                        ...roomConfig.legalStages,
+                        ...roomConfig.counterpickStages,
+                      ][selectedStage]?.name ?? ""
+                    );
+                    if (currentScore[1] === Math.floor(bestOf / 2)) {
+                      handleSetRoomStatus("Complete");
+                      handleSetRoomState(6);
+                    } else {
+                      if (roomConfig.winnerCharacterLocked) {
+                        handleSetCharacterLocked(2, true);
+                      }
+                      handleSetRoomState(roomState + 1);
                     }
-                    handleSetRoomState(roomState + 1);
-                  }
-                }}
-                className={`rounded ${
-                  iAmPlayer === 2
-                    ? "bg-slate-500"
-                    : "bg-green-500 hover:bg-green-700"
-                } px-4 py-2 text-4xl  text-white`}
-              >
-                {room.p2?.name}
-              </button>
-            </div>}
+                  }}
+                  className={`rounded ${
+                    iAmPlayer === 2
+                      ? "bg-slate-500"
+                      : "bg-green-500 hover:bg-green-700"
+                  } px-4 py-2 text-4xl  text-white`}
+                >
+                  {room.p2?.name}
+                </button>
+              </div>
+            )}
             <div className="relative  text-white">
               <img
                 className="rounded-lg"
-                src={[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.image}
-                alt={[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.name}
+                src={
+                  [...roomConfig.legalStages, ...roomConfig.counterpickStages][
+                    selectedStage
+                  ]?.image
+                }
+                alt={
+                  [...roomConfig.legalStages, ...roomConfig.counterpickStages][
+                    selectedStage
+                  ]?.name
+                }
               />
               <div className="absolute bottom-2 left-4 text-lg sm:text-3xl">
-                {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.name}
+                {
+                  [...roomConfig.legalStages, ...roomConfig.counterpickStages][
+                    selectedStage
+                  ]?.name
+                }
               </div>
               <div className="absolute bottom-2 right-4 text-lg sm:text-3xl">
-                Width: {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.width} Height:{" "}
-                {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.height}
+                Width:{" "}
+                {
+                  [...roomConfig.legalStages, ...roomConfig.counterpickStages][
+                    selectedStage
+                  ]?.width
+                }{" "}
+                Height:{" "}
+                {
+                  [...roomConfig.legalStages, ...roomConfig.counterpickStages][
+                    selectedStage
+                  ]?.height
+                }
               </div>
             </div>
           </div>
@@ -831,37 +906,38 @@ const Home: NextPage = () => {
             : Change your character?
           </h2>
           <div className="flex flex-col items-center gap-2">
-            { iAmPlayer && 
-            <button
-              onClick={() => {
-                if (iAmPlayer === 1) {
-                  if (!p1CharacterLocked) {
-                    handleSetCharacterLocked(1, true);
+            {iAmPlayer && (
+              <button
+                onClick={() => {
+                  if (iAmPlayer === 1) {
+                    if (!p1CharacterLocked) {
+                      handleSetCharacterLocked(1, true);
+                    }
+                  } else if (iAmPlayer === 2) {
+                    if (!p2CharacterLocked) {
+                      handleSetCharacterLocked(2, true);
+                    }
                   }
-                } else if (iAmPlayer === 2) {
-                  if (!p2CharacterLocked) {
-                    handleSetCharacterLocked(2, true);
-                  }
-                }
-              }}
-              className={`rounded ${
-                iAmPlayer === 1
-                  ? p1CharacterLocked
+                }}
+                className={`rounded ${
+                  iAmPlayer === 1
+                    ? p1CharacterLocked
+                      ? "bg-red-500"
+                      : "bg-green-500"
+                    : p2CharacterLocked
                     ? "bg-red-500"
                     : "bg-green-500"
+                } px-4 py-2 text-2xl  text-white`}
+              >
+                {iAmPlayer === 1
+                  ? p1CharacterLocked
+                    ? "LOCKED"
+                    : "LOCK IN"
                   : p2CharacterLocked
-                  ? "bg-red-500"
-                  : "bg-green-500"
-              } px-4 py-2 text-2xl  text-white`}
-            >
-              {iAmPlayer === 1
-                ? p1CharacterLocked
                   ? "LOCKED"
-                  : "LOCK IN"
-                : p2CharacterLocked
-                ? "LOCKED"
-                : "LOCK IN"}
-            </button>}
+                  : "LOCK IN"}
+              </button>
+            )}
             <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-10">
               {roomConfig.legalCharacters.map((character, idx) => (
                 <div
@@ -908,15 +984,37 @@ const Home: NextPage = () => {
             <div className="relative  text-white">
               <img
                 className="rounded-lg"
-                src={[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.image}
-                alt={[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.name}
+                src={
+                  [...roomConfig.legalStages, ...roomConfig.counterpickStages][
+                    selectedStage
+                  ]?.image
+                }
+                alt={
+                  [...roomConfig.legalStages, ...roomConfig.counterpickStages][
+                    selectedStage
+                  ]?.name
+                }
               />
               <div className="absolute bottom-2 left-4 text-lg sm:text-3xl">
-                {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.name}
+                {
+                  [...roomConfig.legalStages, ...roomConfig.counterpickStages][
+                    selectedStage
+                  ]?.name
+                }
               </div>
               <div className="absolute bottom-2 right-4 text-lg sm:text-3xl">
-                Width: {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.width} Height:{" "}
-                {[...roomConfig.legalStages, ...roomConfig.counterpickStages][selectedStage]?.height}
+                Width:{" "}
+                {
+                  [...roomConfig.legalStages, ...roomConfig.counterpickStages][
+                    selectedStage
+                  ]?.width
+                }{" "}
+                Height:{" "}
+                {
+                  [...roomConfig.legalStages, ...roomConfig.counterpickStages][
+                    selectedStage
+                  ]?.height
+                }
               </div>
               {iAmPlayer === currentBanner && (
                 <button
@@ -930,7 +1028,10 @@ const Home: NextPage = () => {
                       handleSetSelectedStage(
                         firstMissingNumber(
                           newBans,
-                          [...roomConfig.legalStages, ...roomConfig.counterpickStages].length
+                          [
+                            ...roomConfig.legalStages,
+                            ...roomConfig.counterpickStages,
+                          ].length
                         )
                       );
                     }
@@ -948,35 +1049,37 @@ const Home: NextPage = () => {
               )}
             </div>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-              {[...roomConfig.legalStages, ...roomConfig.counterpickStages].map((stage, idx) => (
-                <div
-                  onClick={() => {
-                    if (
-                      iAmPlayer === currentBanner && 
-                      !currentBans.includes(idx)
-                    ) {
-                      handleSetSelectedStage(idx);
-                    }
-                  }}
-                  className="relative"
-                  key={`stage-${idx}`}
-                >
-                  <img
-                    className={`rounded-xl border-4 ${
-                      selectedStage === idx || currentBans.includes(idx)
-                        ? "border-red-600"
-                        : "cursor-pointer border-green-600"
-                    }`}
-                    src={stage.image}
-                    alt={stage.name}
-                  />
-                  {currentBans.includes(idx) && (
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded px-4 py-2 text-4xl  text-red-500 sm:text-lg md:text-2xl lg:text-4xl">
-                      BANNED
-                    </div>
-                  )}
-                </div>
-              ))}
+              {[...roomConfig.legalStages, ...roomConfig.counterpickStages].map(
+                (stage, idx) => (
+                  <div
+                    onClick={() => {
+                      if (
+                        iAmPlayer === currentBanner &&
+                        !currentBans.includes(idx)
+                      ) {
+                        handleSetSelectedStage(idx);
+                      }
+                    }}
+                    className="relative"
+                    key={`stage-${idx}`}
+                  >
+                    <img
+                      className={`rounded-xl border-4 ${
+                        selectedStage === idx || currentBans.includes(idx)
+                          ? "border-red-600"
+                          : "cursor-pointer border-green-600"
+                      }`}
+                      src={stage.image}
+                      alt={stage.name}
+                    />
+                    {currentBans.includes(idx) && (
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded px-4 py-2 text-4xl  text-red-500 sm:text-lg md:text-2xl lg:text-4xl">
+                        BANNED
+                      </div>
+                    )}
+                  </div>
+                )
+              )}
             </div>
           </div>
         </>
