@@ -42,12 +42,13 @@ export const strikerRoomRouter = createTRPCRouter({
   cancelRoom: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const cancelRoom = await ctx.prisma.strikerRoom.deleteMany({
+      const cancelRoom = await ctx.prisma.strikerRoom.update({
         where: {
           id: input.id,
           p1Id: ctx.session.user.id,
           roomStatus: { in: ["Active", "Inactive"] },
         },
+        data: { roomStatus: RoomStatus.Canceled },
       });
       await pusherServerClient.trigger(`room-${input.id}`, "cancel-room", {});
       return cancelRoom;
@@ -218,25 +219,25 @@ export const strikerRoomRouter = createTRPCRouter({
         data: { mostRecentWinner: input.mostRecentWinner },
         where: { id: input.id },
       });
-      await ctx.prisma.strikerRoom.update({
-        where: { id: setMostRecentWinner.id },
-        data: {
-          games: {
-            create: {
-              number: setMostRecentWinner.currentScore
-                .split(",")
-                .map((score) => parseInt(score))
-                .reduce((a, b) => a + b, 0),
-              stageName: input.stageName,
-              p1Character: setMostRecentWinner.p1SelectedCharacter,
-              p2Character: setMostRecentWinner.p2SelectedCharacter,
-              p1Id: setMostRecentWinner.p1Id,
-              p2Id: setMostRecentWinner.p2Id ?? "",
-              winner: input.mostRecentWinner,
-            },
-          },
-        },
-      });
+      // await ctx.prisma.strikerRoom.update({
+      //   where: { id: setMostRecentWinner.id },
+      //   data: {
+      //     games: {
+      //       create: {
+      //         number: setMostRecentWinner.currentScore
+      //           .split(",")
+      //           .map((score) => parseInt(score))
+      //           .reduce((a, b) => a + b, 0),
+      //         stageName: input.stageName,
+      //         p1Character: setMostRecentWinner.p1SelectedCharacter,
+      //         p2Character: setMostRecentWinner.p2SelectedCharacter,
+      //         p1Id: setMostRecentWinner.p1Id,
+      //         p2Id: setMostRecentWinner.p2Id ?? "",
+      //         winner: input.mostRecentWinner,
+      //       },
+      //     },
+      //   },
+      // });
       await pusherServerClient.trigger(
         `room-${input.id}`,
         "set-most-recent-winner",

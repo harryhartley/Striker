@@ -56,55 +56,55 @@ export const roomConfigs: roomConfigInterface[] = [
     legalStages: [
       {
         name: "Subway",
-        image: "https://i.imgur.com/TQliTA8.png",
+        image: "https://i.imgur.com/Jni42P2.png",
         width: "1050",
         height: "510",
       },
       {
         name: "Desert",
-        image: "https://i.imgur.com/RxkSs5N.png",
+        image: "https://i.imgur.com/5X2wwtx.png",
         width: "1130",
         height: "510",
       },
       {
         name: "Room",
-        image: "https://i.imgur.com/TB6KlRK.png",
+        image: "https://i.imgur.com/eZr08A0.png",
         width: "1100",
         height: "550",
       },
       {
         name: "Outskirts",
-        image: "https://i.imgur.com/R5b6ZNq.png",
+        image: "https://i.imgur.com/3l9pyf2.png",
         width: "1240",
         height: "510",
       },
       {
         name: "Streets",
-        image: "https://i.imgur.com/gSxcB5k.png",
+        image: "https://i.imgur.com/1Mh18yB.png",
         width: "1320",
         height: "515",
       },
       {
         name: "Pool",
-        image: "https://i.imgur.com/8xhB7na.png",
+        image: "https://i.imgur.com/xyOuzmQ.png",
         width: "1210",
         height: "575",
       },
       {
         name: "Stadium",
-        image: "https://i.imgur.com/GnSvFjR.png",
+        image: "https://i.imgur.com/s11amsk.png",
         width: "1230",
         height: "540",
       },
       {
         name: "Factory",
-        image: "https://i.imgur.com/UkSDFGH.png",
+        image: "https://i.imgur.com/Q5hP5h7.png",
         width: "1400",
         height: "542",
       },
       {
         name: "Elevator",
-        image: "https://i.imgur.com/nRFtIK9.png",
+        image: "https://i.imgur.com/TF16eI6.png",
         width: "1492",
         height: "522",
       },
@@ -113,7 +113,7 @@ export const roomConfigs: roomConfigInterface[] = [
     bannedStages: [
       {
         name: "Sewer",
-        image: "https://i.imgur.com/gf0oKf8.png",
+        image: "https://i.imgur.com/K4jS4Us.png",
         width: "1240",
         height: "510",
       },
@@ -125,7 +125,7 @@ export const roomConfigs: roomConfigInterface[] = [
     description: "5 starters, 4 counterpicks",
     gameName: "LLB",
     numberOfBans: 2,
-    winnerCharacterLocked: true,
+    winnerCharacterLocked: false,
     legalCharacters: [
       { name: "Candyman", image: "https://i.imgur.com/fiIa0Wp.png" },
       { name: "Dice", image: "https://i.imgur.com/hVHrBkE.png" },
@@ -144,31 +144,31 @@ export const roomConfigs: roomConfigInterface[] = [
     legalStages: [
       {
         name: "Subway",
-        image: "https://i.imgur.com/TQliTA8.png",
+        image: "https://i.imgur.com/Jni42P2.png",
         width: "1050",
         height: "510",
       },
       {
         name: "Desert",
-        image: "https://i.imgur.com/RxkSs5N.png",
+        image: "https://i.imgur.com/5X2wwtx.png",
         width: "1130",
         height: "510",
       },
       {
         name: "Room",
-        image: "https://i.imgur.com/TB6KlRK.png",
+        image: "https://i.imgur.com/eZr08A0.png",
         width: "1100",
         height: "550",
       },
       {
         name: "Outskirts",
-        image: "https://i.imgur.com/R5b6ZNq.png",
+        image: "https://i.imgur.com/3l9pyf2.png",
         width: "1240",
         height: "510",
       },
       {
         name: "Streets",
-        image: "https://i.imgur.com/gSxcB5k.png",
+        image: "https://i.imgur.com/1Mh18yB.png",
         width: "1320",
         height: "515",
       },
@@ -176,25 +176,25 @@ export const roomConfigs: roomConfigInterface[] = [
     counterpickStages: [
       {
         name: "Pool",
-        image: "https://i.imgur.com/8xhB7na.png",
+        image: "https://i.imgur.com/xyOuzmQ.png",
         width: "1210",
         height: "575",
       },
       {
         name: "Stadium",
-        image: "https://i.imgur.com/GnSvFjR.png",
+        image: "https://i.imgur.com/s11amsk.png",
         width: "1230",
         height: "540",
       },
       {
         name: "Factory",
-        image: "https://i.imgur.com/UkSDFGH.png",
+        image: "https://i.imgur.com/Q5hP5h7.png",
         width: "1400",
         height: "542",
       },
       {
         name: "Elevator",
-        image: "https://i.imgur.com/nRFtIK9.png",
+        image: "https://i.imgur.com/TF16eI6.png",
         width: "1492",
         height: "522",
       },
@@ -202,7 +202,7 @@ export const roomConfigs: roomConfigInterface[] = [
     bannedStages: [
       {
         name: "Sewer",
-        image: "https://i.imgur.com/gf0oKf8.png",
+        image: "https://i.imgur.com/K4jS4Us.png",
         width: "1240",
         height: "510",
       },
