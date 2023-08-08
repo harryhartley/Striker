@@ -7,11 +7,11 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { useIdleTimer } from "react-idle-timer";
 import { pusherClient } from "~/server/common/pusherClient";
+import { usePusherStore } from "~/store/pusherStore";
 import { api } from "~/utils/api";
 import {
   fallbackCharacter,
   getConfigById,
-  type characterInterface,
   type roomConfigInterface,
 } from "~/utils/roomConfigs";
 
@@ -69,8 +69,6 @@ const Home: NextPage = () => {
   const [currentBans, setStateCurrentBans] = useState<number[]>([]);
   const [firstBan, setStateFirstBan] = useState<number>(0);
   const [configId, setStateConfigId] = useState("");
-  const [defaultCharacter, setStateDefaultCharacter] =
-    useState<characterInterface>(fallbackCharacter);
   const [bestOf, setStateBestOf] = useState(1);
   const [steamUrl, setStateSteamUrl] = useState<string | undefined>(undefined);
 
@@ -109,11 +107,6 @@ const Home: NextPage = () => {
           setStateCurrentBans(bansStringToList(data.currentBans));
           setStateFirstBan(data.firstBan);
           setStateConfigId(data.configId);
-          setStateDefaultCharacter(
-            getConfigById(data.configId).legalCharacters.find(
-              (x) => x.default === true
-            ) ?? fallbackCharacter
-          );
           setStateBestOf(data.bestOf);
           setStateSteamUrl(data.steamUrl ?? undefined);
 
@@ -144,7 +137,7 @@ const Home: NextPage = () => {
     setStateRoomConfig(getConfigById(configId));
   }, [configId]);
 
-  const pusher = pusherClient;
+  const pusher = usePusherStore((state) => state.pusherClient);
 
   useEffect(() => {
     if (typeof room?.id === "string") {
