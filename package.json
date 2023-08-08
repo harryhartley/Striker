@@ -30,7 +30,8 @@
     "react-idle-timer": "^5.7.2",
     "react-spinners": "^0.13.8",
     "superjson": "1.12.2",
-    "zod": "^3.21.4"
+    "zod": "^3.21.4",
+    "zustand": "^4.4.1"
   },
   "devDependencies": {
     "@types/eslint": "^8.37.0",
