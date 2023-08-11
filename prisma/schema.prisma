@@ -120,7 +120,6 @@ model Session {
 
 enum Role {
   USER
-  CONTRIBUTOR
   MODERATOR
   ADMIN
 }
