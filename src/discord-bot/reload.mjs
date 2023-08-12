@@ -15,14 +15,14 @@ const commands = [
 ];
 
 const rest = new REST({ version: "10" }).setToken(
-  process.env.DISCORD_BOT_TOKEN
+  process.env.DISCORD_BOT_TOKEN ?? ""
 );
 
 try {
   console.log("Started refreshing application (/) commands.");
 
   await rest.put(
-    Routes.applicationCommands(process.env.DISCORD_BOT_CLIENT_ID),
+    Routes.applicationCommands(process.env.DISCORD_BOT_CLIENT_ID ?? ""),
     {
       body: commands,
     }
