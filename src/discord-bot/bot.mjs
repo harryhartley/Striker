@@ -6,6 +6,7 @@ config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const prisma = new PrismaClient();
+const domain = "https://strkr.hyhy.gg";
 
 client.on("ready", () => {
   console.log(`Logged in as ${client.user?.tag}!`);
@@ -15,6 +16,17 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
 
   if (interaction.commandName === "striker") {
+    const opponentObject = interaction.options.data.find(
+      (o) => o.name === "opponent"
+    )?.user;
+    const opponentId = opponentObject?.id;
+    const ruleset = interaction.options.data.find(
+      (o) => o.name === "ruleset"
+    )?.value;
+    const bestOf = interaction.options.data.find(
+      (o) => o.name === "bestof"
+    )?.value;
+
     const user = await prisma.user.findFirst({
       where: { accounts: { some: { providerAccountId: interaction.user.id } } },
       select: { id: true },
@@ -28,24 +40,58 @@ client.on("interactionCreate", async (interaction) => {
       });
 
       if (!exists) {
-        const room = await prisma.strikerRoom.create({
-          data: {
-            p1Id: user.id,
-            configId: "clkp7ja74000008ju9zmg06n6",
-            bestOf: 3,
-          },
-        });
-        await interaction.reply(
-          `New room created: https://strkr.hyhy.gg/room/${room.id}`
-        );
+        if (!!opponentId) {
+          if (opponentId === interaction.user.id) {
+            await interaction.reply(
+              `You cannot challenge yourself. Please specify an opponent.`
+            );
+          } else {
+            const opponent = await prisma.user.findFirst({
+              where: {
+                accounts: { some: { providerAccountId: opponentId } },
+              },
+              select: { id: true },
+            });
+            if (!!opponent) {
+              const room = await prisma.strikerRoom.create({
+                data: {
+                  p1Id: user.id,
+                  p2Id: opponent.id,
+                  configId: ruleset?.toString() ?? "clkp7ja74000008ju9zmg06n6",
+                  bestOf: bestOf === undefined ? 3 : Number(bestOf),
+                },
+              });
+              await interaction.reply(
+                `New room with opponent ${opponentObject.toString()}: ${domain}/room/${
+                  room.id
+                }`
+              );
+            } else {
+              await interaction.reply(
+                `Opponent not found. Please sign in at least once at ${domain}`
+              );
+            }
+          }
+        } else {
+          const room = await prisma.strikerRoom.create({
+            data: {
+              p1Id: user.id,
+              configId: ruleset?.toString() ?? "clkp7ja74000008ju9zmg06n6",
+              bestOf: bestOf === undefined ? 3 : Number(bestOf),
+            },
+          });
+          await interaction.reply(
+            `New room created: ${domain}/room/${room.id}`
+          );
+        }
       } else {
         await interaction.reply(
-          `Room already exists: https://strkr.hyhy.gg/room/${exists.id}`
+          `Room already exists: ${domain}/room/${exists.id}`
         );
       }
     } else {
       await interaction.reply(
-        `User not found. Please sign in at least once at https://strkr.hyhy.gg`
+        `User not found. Please sign in at least once at ${domain}`
       );
     }
   }
@@ -78,7 +124,7 @@ client.on("interactionCreate", async (interaction) => {
       }
     } else {
       await interaction.reply(
-        `User not found. Please sign in at least once at https://strkr.hyhy.gg`
+        `User not found. Please sign in at least once at ${domain}`
       );
     }
   }
