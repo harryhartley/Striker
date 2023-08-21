@@ -42,6 +42,19 @@ export const strikerRoomRouter = createTRPCRouter({
   cancelRoom: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
+      const room = await ctx.prisma.strikerRoom.findFirst({
+        where: {
+          id: input.id,
+          p1Id: ctx.session.user.id,
+          roomStatus: { in: ["Active", "Inactive"] },
+        },
+      });
+      if (!room) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Room not found",
+        });
+      }
       const cancelRoom = await ctx.prisma.strikerRoom.update({
         where: {
           id: input.id,
@@ -56,8 +69,16 @@ export const strikerRoomRouter = createTRPCRouter({
   getIncompleteRoomsByUserId: protectedProcedure.query(async ({ ctx }) => {
     return ctx.prisma.strikerRoom.findMany({
       where: {
-        p1Id: ctx.session.user.id,
-        roomStatus: { in: ["Active", "Inactive"] },
+        OR: [
+          {
+            p1Id: ctx.session.user.id,
+            roomStatus: { in: ["Active", "Inactive"] },
+          },
+          {
+            p2Id: ctx.session.user.id,
+            roomStatus: { in: ["Active", "Inactive"] },
+          },
+        ],
       },
     });
   }),
@@ -75,15 +96,19 @@ export const strikerRoomRouter = createTRPCRouter({
   setP2Id: protectedProcedure
     .input(z.object({ id: z.string().cuid(), p2Id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const p2Exists = await ctx.prisma.strikerRoom.findFirst({
+      const room = await ctx.prisma.strikerRoom.findFirst({
         where: {
           id: input.id,
         },
       });
-      if (p2Exists?.p2Id) {
+      if (
+        !!room?.p2Id ||
+        room?.roomStatus !== RoomStatus.Inactive ||
+        room.roomState !== 0
+      ) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "P2 already exists",
+          message: "Room update forbidden",
         });
       }
       const firstBan = randomIntFromIntervalInc(1, 2);
@@ -97,35 +122,100 @@ export const strikerRoomRouter = createTRPCRouter({
       return setP2Id;
     }),
   setRoomStatus: protectedProcedure
-    // need some serverside validation here, not sure how to do it
     .input(
       z.object({ id: z.string().cuid(), roomStatus: z.nativeEnum(RoomStatus) })
     )
     .mutation(async ({ ctx, input }) => {
-      const setRoomStatus = ctx.prisma.strikerRoom.update({
-        data: { roomStatus: input.roomStatus },
+      const room = await ctx.prisma.strikerRoom.findFirst({
         where: { id: input.id },
       });
-      await pusherServerClient.trigger(`room-${input.id}`, "set-room-status", {
-        roomStatus: input.roomStatus,
-      });
-      return setRoomStatus;
+      if (
+        room?.p1Id !== ctx.session.user.id &&
+        room?.p2Id !== ctx.session.user.id
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Room state update forbidden",
+        });
+      }
+      if (
+        (room?.roomStatus === RoomStatus.Inactive &&
+          (input.roomStatus === RoomStatus.Active ||
+            input.roomStatus === RoomStatus.Canceled)) ||
+        (room?.roomStatus === RoomStatus.Active &&
+          (input.roomStatus === RoomStatus.Complete ||
+            input.roomStatus === RoomStatus.Canceled))
+      ) {
+        const setRoomStatus = ctx.prisma.strikerRoom.update({
+          data: { roomStatus: input.roomStatus },
+          where: { id: input.id },
+        });
+        await pusherServerClient.trigger(
+          `room-${input.id}`,
+          "set-room-status",
+          {
+            roomStatus: input.roomStatus,
+          }
+        );
+        return setRoomStatus;
+      } else {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Room status update not valid",
+        });
+      }
     }),
-  setRoomState: protectedProcedure
+  advanceRoomState: protectedProcedure
     .input(z.object({ id: z.string().cuid(), roomState: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const setRoomState = await ctx.prisma.strikerRoom.update({
-        data: { roomState: input.roomState },
+      const room = await ctx.prisma.strikerRoom.findFirst({
         where: { id: input.id },
       });
-      await pusherServerClient.trigger(`room-${input.id}`, "set-room-state", {
-        roomState: input.roomState,
-      });
-      return setRoomState;
+      if (
+        room?.p1Id !== ctx.session.user.id &&
+        room?.p2Id !== ctx.session.user.id
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Room state update forbidden",
+        });
+      }
+      if (
+        typeof room?.roomState === "number" &&
+        room.roomState + 1 === input.roomState
+      ) {
+        const setRoomState = await ctx.prisma.strikerRoom.update({
+          data: { roomState: input.roomState },
+          where: { id: input.id },
+        });
+        await pusherServerClient.trigger(`room-${input.id}`, "set-room-state", {
+          roomState: input.roomState,
+        });
+        return setRoomState;
+      } else {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Room state update not valid",
+        });
+      }
     }),
   setCurrentScore: protectedProcedure
     .input(z.object({ id: z.string().cuid(), currentScore: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const room = await ctx.prisma.strikerRoom.findFirst({
+        where: { id: input.id },
+      });
+      if (
+        room?.p1Id !== ctx.session.user.id &&
+        room?.p2Id !== ctx.session.user.id &&
+        typeof room?.roomState == "number" &&
+        room?.roomState % 3 !== 0
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Room state update forbidden",
+        });
+      }
       const setCurrentScore = await ctx.prisma.strikerRoom.update({
         data: { currentScore: input.currentScore },
         where: { id: input.id },
@@ -146,19 +236,48 @@ export const strikerRoomRouter = createTRPCRouter({
         id: z.string().cuid(),
         character: z.nativeEnum(Character),
         playerNumber: z.number().int().min(1).max(2),
+        requesterNumber: z.number().int().min(1).max(2),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const setCharacter = await ctx.prisma.strikerRoom.update({
-        data: { [`p${input.playerNumber}SelectedCharacter`]: input.character },
+      const room = await ctx.prisma.strikerRoom.findFirst({
         where: { id: input.id },
       });
-      await pusherServerClient.trigger(`room-${input.id}`, "set-character", {
-        character: input.character,
-        playerNumber: input.playerNumber,
-        requester: ctx.session.user.id,
-      });
-      return setCharacter;
+      if (
+        room?.p1Id !== ctx.session.user.id &&
+        room?.p2Id !== ctx.session.user.id &&
+        typeof room?.roomState == "number" &&
+        room?.roomState % 3 !== 1
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Room state update forbidden",
+        });
+      }
+      if (
+        typeof room?.roomState === "number" &&
+        room?.roomState % 3 === 1 &&
+        ((input.requesterNumber === 1 && !room.p1CharacterLocked) ||
+          (input.requesterNumber === 2 && !room.p2CharacterLocked))
+      ) {
+        const setCharacter = await ctx.prisma.strikerRoom.update({
+          data: {
+            [`p${input.playerNumber}SelectedCharacter`]: input.character,
+          },
+          where: { id: input.id },
+        });
+        await pusherServerClient.trigger(`room-${input.id}`, "set-character", {
+          character: input.character,
+          playerNumber: input.playerNumber,
+          requester: ctx.session.user.id,
+        });
+        return setCharacter;
+      } else {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Character update not valid",
+        });
+      }
     }),
   setCharacterLocked: protectedProcedure
     .input(
@@ -169,6 +288,20 @@ export const strikerRoomRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const room = await ctx.prisma.strikerRoom.findFirst({
+        where: { id: input.id },
+      });
+      if (
+        room?.p1Id !== ctx.session.user.id &&
+        room?.p2Id !== ctx.session.user.id &&
+        typeof room?.roomState == "number" &&
+        room?.roomState % 3 !== 1
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Room state update forbidden",
+        });
+      }
       const setCharacterLocked = await ctx.prisma.strikerRoom.update({
         data: {
           [`p${input.playerNumber}CharacterLocked`]: input.characterLocked,
@@ -215,29 +348,41 @@ export const strikerRoomRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const room = await ctx.prisma.strikerRoom.findFirst({
+        where: { id: input.id },
+        include: { games: true },
+      });
+      if (
+        room?.p1Id !== ctx.session.user.id &&
+        room?.p2Id !== ctx.session.user.id &&
+        typeof room?.roomState == "number" &&
+        room?.roomState % 3 !== 0
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Room state update forbidden",
+        });
+      }
       const setMostRecentWinner = await ctx.prisma.strikerRoom.update({
         data: { mostRecentWinner: input.mostRecentWinner },
         where: { id: input.id },
       });
-      // await ctx.prisma.strikerRoom.update({
-      //   where: { id: setMostRecentWinner.id },
-      //   data: {
-      //     games: {
-      //       create: {
-      //         number: setMostRecentWinner.currentScore
-      //           .split(",")
-      //           .map((score) => parseInt(score))
-      //           .reduce((a, b) => a + b, 0),
-      //         stageName: input.stageName,
-      //         p1Character: setMostRecentWinner.p1SelectedCharacter,
-      //         p2Character: setMostRecentWinner.p2SelectedCharacter,
-      //         p1Id: setMostRecentWinner.p1Id,
-      //         p2Id: setMostRecentWinner.p2Id ?? "",
-      //         winner: input.mostRecentWinner,
-      //       },
-      //     },
-      //   },
-      // });
+      await ctx.prisma.strikerRoom.update({
+        where: { id: setMostRecentWinner.id },
+        data: {
+          games: {
+            create: {
+              number: (room?.games.length ?? 0) + 1,
+              stageName: input.stageName,
+              p1Character: setMostRecentWinner.p1SelectedCharacter,
+              p2Character: setMostRecentWinner.p2SelectedCharacter,
+              p1Id: setMostRecentWinner.p1Id,
+              p2Id: setMostRecentWinner.p2Id ?? "",
+              winner: input.mostRecentWinner,
+            },
+          },
+        },
+      });
       await pusherServerClient.trigger(
         `room-${input.id}`,
         "set-most-recent-winner",
@@ -255,6 +400,21 @@ export const strikerRoomRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const room = await ctx.prisma.strikerRoom.findFirst({
+        where: { id: input.id },
+        include: { games: true },
+      });
+      if (
+        room?.p1Id !== ctx.session.user.id &&
+        room?.p2Id !== ctx.session.user.id &&
+        typeof room?.roomState == "number" &&
+        room?.roomState % 3 !== 2
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Room state update forbidden",
+        });
+      }
       const setSelectedStage = await ctx.prisma.strikerRoom.update({
         data: { selectedStage: input.selectedStage },
         where: { id: input.id },
@@ -277,6 +437,21 @@ export const strikerRoomRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const room = await ctx.prisma.strikerRoom.findFirst({
+        where: { id: input.id },
+        include: { games: true },
+      });
+      if (
+        room?.p1Id !== ctx.session.user.id &&
+        room?.p2Id !== ctx.session.user.id &&
+        typeof room?.roomState === "number" &&
+        room?.roomState % 3 !== 2
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Room state update forbidden",
+        });
+      }
       const setCurrentBans = await ctx.prisma.strikerRoom.update({
         data: { currentBans: input.currentBans },
         where: { id: input.id },
@@ -286,37 +461,6 @@ export const strikerRoomRouter = createTRPCRouter({
         requester: ctx.session.user.id,
       });
       return setCurrentBans;
-    }),
-  addGame: protectedProcedure
-    .input(
-      z.object({
-        roomId: z.string().cuid(),
-        number: z.number(),
-        stageName: z.string(),
-        p1Character: z.nativeEnum(Character),
-        p2Character: z.nativeEnum(Character),
-        p1Id: z.string().cuid(),
-        p2Id: z.string().cuid(),
-        winner: z.number(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      return ctx.prisma.strikerRoom.update({
-        where: { id: input.roomId },
-        data: {
-          games: {
-            create: {
-              number: input.number,
-              stageName: input.stageName,
-              p1Character: input.p1Character,
-              p2Character: input.p2Character,
-              p1Id: input.p1Id,
-              p2Id: input.p2Id,
-              winner: input.winner,
-            },
-          },
-        },
-      });
     }),
   getRoomsByParticipationWithGames: protectedProcedure
     .input(
@@ -347,5 +491,66 @@ export const strikerRoomRouter = createTRPCRouter({
           games: true,
         },
       });
+    }),
+  revertToLastSafeState: protectedProcedure
+    .input(z.object({ id: z.string().cuid(), requesterNumber: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const room = await ctx.prisma.strikerRoom.findUnique({
+        where: { id: input.id },
+      });
+      if (!room) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Room not found",
+        });
+      }
+      if (room.revertRequested === 0) {
+        await ctx.prisma.strikerRoom.update({
+          where: { id: input.id },
+          data: { revertRequested: input.requesterNumber },
+        });
+        await pusherServerClient.trigger(
+          `room-${input.id}`,
+          "revert-requested",
+          {
+            requesterNumber: input.requesterNumber,
+            requester: ctx.session.user.id,
+          }
+        );
+      } else {
+        if (room.revertRequested === input.requesterNumber) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Revert already requested",
+          });
+        }
+        const previousScore = room.currentScore
+          .split(",")
+          .map((score, idx) => {
+            if (idx + 1 === room.mostRecentWinner) {
+              return (parseInt(score) - 1).toString();
+            }
+          })
+          .join(",");
+        const revertedRoom = await ctx.prisma.strikerRoom.update({
+          where: { id: input.id },
+          data: {
+            revertRequested: 0,
+            currentScore: previousScore,
+            currentBans: "",
+            roomState: 3,
+            p1CharacterLocked: false,
+            p2CharacterLocked: false,
+            // mostRecentWinner: 0, // store this somewhere
+            // p1SelectedCharacter
+            // p2SelectedCharacter
+            // selectedStage
+          },
+        });
+        await pusherServerClient.trigger(`room-${input.id}`, "revert-room", {
+          requester: ctx.session.user.id,
+        });
+        return revertedRoom;
+      }
     }),
 });

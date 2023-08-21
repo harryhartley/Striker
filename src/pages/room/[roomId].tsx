@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { useIdleTimer } from "react-idle-timer";
+import { CopyToClipboardButton } from "~/components/CopyToClipboardButton";
 import { pusherClient } from "~/server/common/pusherClient";
 import { usePusherStore } from "~/store/pusherStore";
 import { api } from "~/utils/api";
@@ -31,7 +32,7 @@ const bansStringToList = (bans: string): number[] => {
 const Home: NextPage = () => {
   const { data: session } = useSession();
 
-  const { query, events, asPath } = useRouter();
+  const { query, events } = useRouter();
 
   useEffect(() => {
     const exitingFunction = () => {
@@ -68,9 +69,12 @@ const Home: NextPage = () => {
   const [selectedStage, setStateSelectedStage] = useState(0);
   const [currentBans, setStateCurrentBans] = useState<number[]>([]);
   const [firstBan, setStateFirstBan] = useState<number>(0);
+  const [revertRequested, setStateRevertRequested] = useState(0);
   const [configId, setStateConfigId] = useState("");
   const [bestOf, setStateBestOf] = useState(1);
   const [steamUrl, setStateSteamUrl] = useState<string | undefined>(undefined);
+
+  const [confirmResult, setConfirmResult] = useState(false);
 
   const [iAmPlayer, setIAmPlayer] = useState<number | null>(null);
 
@@ -106,6 +110,7 @@ const Home: NextPage = () => {
           setStateSelectedStage(data.selectedStage);
           setStateCurrentBans(bansStringToList(data.currentBans));
           setStateFirstBan(data.firstBan);
+          setStateRevertRequested(data.revertRequested);
           setStateConfigId(data.configId);
           setStateBestOf(data.bestOf);
           setStateSteamUrl(data.steamUrl ?? undefined);
@@ -234,6 +239,17 @@ const Home: NextPage = () => {
       pusher.bind("cancel-room", () => {
         setStateRoomStatus("Canceled");
       });
+      pusher.bind(
+        "revert-requested",
+        (data: { requesterNumber: number; requester: string }) => {
+          if (session?.user.id !== data.requester) {
+            setStateRevertRequested(data.requesterNumber);
+          }
+        }
+      );
+      pusher.bind("revert-room", () => {
+        void refetch();
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.id]);
@@ -275,11 +291,11 @@ const Home: NextPage = () => {
     }
   };
 
-  const setRoomState = api.strikerRoom.setRoomState.useMutation();
-  const handleSetRoomState = (roomState: number) => {
+  const advanceRoomState = api.strikerRoom.advanceRoomState.useMutation();
+  const handleAdvanceRoomState = (roomState: number) => {
     if (session) {
       setStateRoomState(roomState);
-      setRoomState.mutate({
+      advanceRoomState.mutate({
         id: query.roomId as string,
         roomState,
       });
@@ -304,6 +320,7 @@ const Home: NextPage = () => {
         id: query.roomId as string,
         playerNumber,
         character,
+        requesterNumber: playerNumber,
       });
     }
   };
@@ -356,6 +373,17 @@ const Home: NextPage = () => {
     }
   };
 
+  const setRevert = api.strikerRoom.revertToLastSafeState.useMutation();
+  const handleSetRevert = (requesterNumber: number) => {
+    if (session) {
+      setStateRevertRequested(iAmPlayer ?? 0);
+      setRevert.mutate({
+        id: query.roomId as string,
+        requesterNumber,
+      });
+    }
+  };
+
   const [currentBanner, setCurrentBanner] = useState(0);
   useEffect(() => {
     if (mostRecentWinner === 1) {
@@ -385,7 +413,7 @@ const Home: NextPage = () => {
   if (typeof query.roomId !== "string") return <p>Bad ID</p>;
 
   if (!session) {
-    return <p>Not authorised</p>;
+    return <p>Not authorised. Please sign in to view this page.</p>;
   }
 
   if (isLoading) return <div>Loading...</div>;
@@ -443,20 +471,7 @@ const Home: NextPage = () => {
           </div>
 
           <div className="mt-4 flex justify-center">
-            {room.p1Id === session?.user.id && (
-              <button
-                className="rounded bg-green-500 px-4
-             py-2 text-4xl  text-white hover:bg-green-700"
-                // eslint-disable-next-line @typescript-eslint/no-misused-promises
-                onClick={() =>
-                  navigator.clipboard.writeText(
-                    `https://striker.up.railway.app${asPath}`
-                  )
-                }
-              >
-                Copy Striker Link
-              </button>
-            )}
+            {room.p1Id === session?.user.id && <CopyToClipboardButton />}
           </div>
         </>
       );
@@ -501,21 +516,25 @@ const Home: NextPage = () => {
         </div>
 
         <div className="mt-8 flex flex-col items-center">
-          <div>{roomConfig.name}</div>
+          <h2 className="flex justify-center pb-2 text-lg leading-8 tracking-tight">
+            {roomConfig.name}:
+          </h2>
           <div>Best of {bestOf}</div>
           <div>{roomConfig.numberOfBans} Bans</div>
           <div>
             Character Locked: {roomConfig.winnerCharacterLocked ? "✅" : "❌"}
           </div>
           <div>
-            RPS Winner:{" "}
+            First Ban (RPS):{" "}
             {room.firstBan === 0
               ? "Random"
               : room.firstBan === 1
               ? room.p1.name
               : room.p2?.name}
           </div>
-          <div className="mt-4">Legal Stages:</div>
+          <h2 className="mt-4 flex justify-center pb-2 text-lg leading-8 tracking-tight">
+            Legal Stages:
+          </h2>
           <div className="grid grid-cols-3 gap-x-4">
             {roomConfig.legalStages.map((stage, idx) => (
               <li key={`stage-${idx}`}>{stage.name}</li>
@@ -523,7 +542,9 @@ const Home: NextPage = () => {
           </div>
           {roomConfig.counterpickStages.length > 0 && (
             <>
-              <div className="mt-4">Counterpick Stages:</div>
+              <h2 className="mt-4 flex justify-center pb-2 text-lg leading-8 tracking-tight">
+                Counterpick Stages:
+              </h2>
               <div className="grid grid-cols-3 gap-x-4">
                 {roomConfig.counterpickStages.map((stage, idx) => (
                   <li key={`stage-${idx}`}>{stage.name}</li>
@@ -534,19 +555,21 @@ const Home: NextPage = () => {
         </div>
 
         <div className="mt-4 flex justify-center">
-          {room.p1Id === session?.user.id ? (
+          {iAmPlayer === 1 ? (
             <button
               className="rounded bg-green-500 px-4
              py-2 text-4xl  text-white hover:bg-green-700"
               onClick={() => {
-                handleSetRoomState(1); // remove this when state 0 is implemented
+                handleAdvanceRoomState(roomState + 1);
                 handleSetRoomStatus("Active");
               }}
             >
               Start
             </button>
           ) : (
-            <div>Waiting for {room.p1.name} to start</div>
+            <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
+              Waiting for {room.p1.name} to start
+            </h2>
           )}
         </div>
       </>
@@ -607,7 +630,7 @@ const Home: NextPage = () => {
       </div>
 
       {/* Blind character selection */}
-      {roomState === 1 && (
+      {roomStatus === "Active" && roomState === 1 && (
         <>
           <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             {iAmPlayer === 1 ? room.p1.name : room.p2?.name}: Pick your
@@ -673,7 +696,16 @@ const Home: NextPage = () => {
                   className="relative"
                   key={`character-${idx}`}
                 >
-                  <img src={character.image} alt={character.name} />
+                  <img
+                    className={`rounded-lg bg-white ${
+                      (iAmPlayer === 1 && !p1CharacterLocked) ||
+                      (iAmPlayer === 2 && !p2CharacterLocked)
+                        ? "hover:bg-slate-200"
+                        : ""
+                    }`}
+                    src={character.image}
+                    alt={character.name}
+                  />
                 </div>
               ))}
             </div>
@@ -682,7 +714,7 @@ const Home: NextPage = () => {
       )}
 
       {/* Stage striking */}
-      {roomState === 2 && (
+      {roomStatus === "Active" && roomState === 2 && (
         <>
           <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             {currentBanner === 1 ? room.p1.name : room.p2?.name}: Ban{" "}
@@ -714,7 +746,7 @@ const Home: NextPage = () => {
                       firstMissingNumber(newBans, roomConfig.legalStages.length)
                     );
                     if (newBans.length === roomConfig.legalStages.length - 1) {
-                      handleSetRoomState(roomState + 1);
+                      handleAdvanceRoomState(roomState + 1);
                       handleSetSelectedStage(
                         firstMissingNumber(
                           newBans,
@@ -746,7 +778,9 @@ const Home: NextPage = () => {
                 >
                   <img
                     className={`rounded-xl border-4 ${
-                      selectedStage === idx || currentBans.includes(idx)
+                      selectedStage === idx
+                        ? "border-blue-600"
+                        : currentBans.includes(idx)
                         ? "border-red-600"
                         : "cursor-pointer border-green-600"
                     }`}
@@ -766,7 +800,7 @@ const Home: NextPage = () => {
       )}
 
       {/* Wait for game result - can only report a game loss */}
-      {roomState === 3 && (
+      {roomStatus === "Active" && roomState >= 3 && roomState % 3 === 0 && (
         <>
           <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             Game {currentScore[0] + currentScore[1] + 1} - Report Score
@@ -782,25 +816,29 @@ const Home: NextPage = () => {
                 <button
                   disabled={!iAmPlayer || iAmPlayer === 1}
                   onClick={() => {
-                    handleSetCurrentScore([
-                      currentScore[0] + 1,
-                      currentScore[1],
-                    ]);
-                    handleSetMostRecentWinner(
-                      1,
-                      [
-                        ...roomConfig.legalStages,
-                        ...roomConfig.counterpickStages,
-                      ][selectedStage]?.name ?? ""
-                    );
-                    if (currentScore[0] === Math.floor(bestOf / 2)) {
-                      handleSetRoomStatus("Complete");
-                      handleSetRoomState(6);
+                    if (!confirmResult) {
+                      setConfirmResult(true);
                     } else {
-                      if (roomConfig.winnerCharacterLocked) {
-                        handleSetCharacterLocked(1, true);
+                      setConfirmResult(false);
+                      handleSetCurrentScore([
+                        currentScore[0] + 1,
+                        currentScore[1],
+                      ]);
+                      handleSetMostRecentWinner(
+                        1,
+                        [
+                          ...roomConfig.legalStages,
+                          ...roomConfig.counterpickStages,
+                        ][selectedStage]?.name ?? ""
+                      );
+                      if (currentScore[0] === Math.floor(bestOf / 2)) {
+                        handleSetRoomStatus("Complete");
+                      } else {
+                        if (roomConfig.winnerCharacterLocked) {
+                          handleSetCharacterLocked(1, true);
+                        }
+                        handleAdvanceRoomState(roomState + 1);
                       }
-                      handleSetRoomState(roomState + 1);
                     }
                   }}
                   className={`rounded ${
@@ -809,30 +847,34 @@ const Home: NextPage = () => {
                       : "bg-green-500 hover:bg-green-700"
                   } px-4 py-2 text-4xl  text-white`}
                 >
-                  {room.p1.name}
+                  {confirmResult && iAmPlayer === 2 ? `Confirm?` : room.p1.name}
                 </button>
                 <button
                   disabled={!iAmPlayer || iAmPlayer === 2}
                   onClick={() => {
-                    handleSetCurrentScore([
-                      currentScore[0],
-                      currentScore[1] + 1,
-                    ]);
-                    handleSetMostRecentWinner(
-                      2,
-                      [
-                        ...roomConfig.legalStages,
-                        ...roomConfig.counterpickStages,
-                      ][selectedStage]?.name ?? ""
-                    );
-                    if (currentScore[1] === Math.floor(bestOf / 2)) {
-                      handleSetRoomStatus("Complete");
-                      handleSetRoomState(6);
+                    if (!confirmResult) {
+                      setConfirmResult(true);
                     } else {
-                      if (roomConfig.winnerCharacterLocked) {
-                        handleSetCharacterLocked(2, true);
+                      setConfirmResult(false);
+                      handleSetCurrentScore([
+                        currentScore[0],
+                        currentScore[1] + 1,
+                      ]);
+                      handleSetMostRecentWinner(
+                        2,
+                        [
+                          ...roomConfig.legalStages,
+                          ...roomConfig.counterpickStages,
+                        ][selectedStage]?.name ?? ""
+                      );
+                      if (currentScore[1] === Math.floor(bestOf / 2)) {
+                        handleSetRoomStatus("Complete");
+                      } else {
+                        if (roomConfig.winnerCharacterLocked) {
+                          handleSetCharacterLocked(2, true);
+                        }
+                        handleAdvanceRoomState(roomState + 1);
                       }
-                      handleSetRoomState(roomState + 1);
                     }
                   }}
                   className={`rounded ${
@@ -841,7 +883,9 @@ const Home: NextPage = () => {
                       : "bg-green-500 hover:bg-green-700"
                   } px-4 py-2 text-4xl  text-white`}
                 >
-                  {room.p2?.name}
+                  {confirmResult && iAmPlayer === 1
+                    ? `Confirm?`
+                    : room.p2?.name}
                 </button>
               </div>
             )}
@@ -859,14 +903,14 @@ const Home: NextPage = () => {
                   ]?.name
                 }
               />
-              <div className="absolute bottom-2 left-4 text-lg sm:text-3xl">
+              <div className="absolute bottom-2 left-4 text-lg sm:text-2xl">
                 {
                   [...roomConfig.legalStages, ...roomConfig.counterpickStages][
                     selectedStage
                   ]?.name
                 }
               </div>
-              <div className="absolute bottom-2 right-4 text-lg sm:text-3xl">
+              <div className="absolute bottom-2 right-4 text-lg sm:text-2xl">
                 Width:{" "}
                 {
                   [...roomConfig.legalStages, ...roomConfig.counterpickStages][
@@ -886,7 +930,7 @@ const Home: NextPage = () => {
       )}
 
       {/* W picks character first, L picks character second */}
-      {roomState === 4 && (
+      {roomStatus === "Active" && roomState > 3 && roomState % 3 === 1 && (
         <>
           <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             {mostRecentWinner === 1
@@ -936,11 +980,17 @@ const Home: NextPage = () => {
                 <div
                   onClick={() => {
                     if (iAmPlayer === 1) {
-                      if (!p1CharacterLocked) {
+                      if (
+                        (!p1CharacterLocked && mostRecentWinner === 1) ||
+                        (p2CharacterLocked && mostRecentWinner === 2)
+                      ) {
                         handleSetCharacter(1, character.name as Character);
                       }
                     } else if (iAmPlayer === 2) {
-                      if (!p2CharacterLocked) {
+                      if (
+                        (!p2CharacterLocked && mostRecentWinner === 2) ||
+                        (p1CharacterLocked && mostRecentWinner === 1)
+                      ) {
                         handleSetCharacter(2, character.name as Character);
                       }
                     }
@@ -948,7 +998,20 @@ const Home: NextPage = () => {
                   className="relative"
                   key={`character-${idx}`}
                 >
-                  <img src={character.image} alt={character.name} />
+                  <img
+                    className={`rounded-lg bg-white ${
+                      (iAmPlayer === 1 &&
+                        ((!p1CharacterLocked && mostRecentWinner === 1) ||
+                          (p2CharacterLocked && mostRecentWinner === 2))) ||
+                      (iAmPlayer === 2 &&
+                        ((!p2CharacterLocked && mostRecentWinner === 2) ||
+                          (p1CharacterLocked && mostRecentWinner === 1)))
+                        ? "hover:bg-slate-200"
+                        : ""
+                    }`}
+                    src={character.image}
+                    alt={character.name}
+                  />
                 </div>
               ))}
             </div>
@@ -957,7 +1020,7 @@ const Home: NextPage = () => {
       )}
 
       {/* W bans stages, L picks stage */}
-      {roomState === 5 && (
+      {roomStatus === "Active" && roomState > 3 && roomState % 3 === 2 && (
         <>
           <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
             {(mostRecentWinner === 1 &&
@@ -988,14 +1051,14 @@ const Home: NextPage = () => {
                   ]?.name
                 }
               />
-              <div className="absolute bottom-2 left-4 text-lg sm:text-3xl">
+              <div className="absolute bottom-2 left-4 text-lg sm:text-2xl">
                 {
                   [...roomConfig.legalStages, ...roomConfig.counterpickStages][
                     selectedStage
                   ]?.name
                 }
               </div>
-              <div className="absolute bottom-2 right-4 text-lg sm:text-3xl">
+              <div className="absolute bottom-2 right-4 text-lg sm:text-2xl">
                 Width:{" "}
                 {
                   [...roomConfig.legalStages, ...roomConfig.counterpickStages][
@@ -1013,7 +1076,7 @@ const Home: NextPage = () => {
                 <button
                   onClick={() => {
                     if (currentBans.length === roomConfig.numberOfBans) {
-                      handleSetRoomState(roomState - 2);
+                      handleAdvanceRoomState(roomState + 1);
                       handleSetCurrentBans("");
                     } else {
                       const newBans = [...currentBans, selectedStage];
@@ -1058,8 +1121,12 @@ const Home: NextPage = () => {
                   >
                     <img
                       className={`rounded-xl border-4 ${
-                        selectedStage === idx || currentBans.includes(idx)
+                        selectedStage === idx
+                          ? "border-blue-600"
+                          : currentBans.includes(idx)
                           ? "border-red-600"
+                          : idx > roomConfig.legalStages.length - 1
+                          ? "border-yellow-400"
                           : "cursor-pointer border-green-600"
                       }`}
                       src={stage.image}
@@ -1076,6 +1143,37 @@ const Home: NextPage = () => {
             </div>
           </div>
         </>
+      )}
+
+      {roomStatus === "Active" && roomState > 3 && (
+        <div className="flex justify-center pt-8">
+          <button
+            disabled={!iAmPlayer}
+            onClick={() => {
+              if (iAmPlayer) {
+                handleSetRevert(iAmPlayer);
+              }
+            }}
+            className={`rounded ${
+              revertRequested === iAmPlayer ? "bg-red-500" : "bg-green-500"
+            }
+             px-4 py-2 text-lg text-white ${
+               revertRequested === iAmPlayer ? "" : "hover:bg-green-700"
+             }`}
+          >
+            {!revertRequested
+              ? "Request undo"
+              : revertRequested !== iAmPlayer
+              ? `Undo requested${
+                  revertRequested === 1
+                    ? ` by ${room.p1.name}`
+                    : revertRequested === 2
+                    ? ` by ${room.p2?.name}`
+                    : ""
+                }`
+              : "Undo requested"}
+          </button>
+        </div>
       )}
     </>
   );

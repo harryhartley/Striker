@@ -149,16 +149,16 @@ export const roomConfigs: roomConfigInterface[] = [
         height: "510",
       },
       {
-        name: "Desert",
-        image: "https://i.imgur.com/5X2wwtx.png",
-        width: "1130",
-        height: "510",
-      },
-      {
         name: "Room",
         image: "https://i.imgur.com/eZr08A0.png",
         width: "1100",
         height: "550",
+      },
+      {
+        name: "Stadium",
+        image: "https://i.imgur.com/s11amsk.png",
+        width: "1230",
+        height: "540",
       },
       {
         name: "Outskirts",
@@ -181,10 +181,10 @@ export const roomConfigs: roomConfigInterface[] = [
         height: "575",
       },
       {
-        name: "Stadium",
-        image: "https://i.imgur.com/s11amsk.png",
-        width: "1230",
-        height: "540",
+        name: "Desert",
+        image: "https://i.imgur.com/5X2wwtx.png",
+        width: "1130",
+        height: "510",
       },
       {
         name: "Factory",
