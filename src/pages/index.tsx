@@ -20,6 +20,7 @@ const Home: NextPage = () => {
     isLoading: loadingRooms,
     refetch,
   } = api.strikerRoom.getIncompleteRoomsByUserId.useQuery(undefined, {
+    enabled: !!session,
     refetchOnWindowFocus: false,
   });
 
