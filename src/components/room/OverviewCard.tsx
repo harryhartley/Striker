@@ -6,13 +6,13 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "../ui/Card";
+} from "@/components/ui/card";
 import {
   fallbackCharacter,
   getConfigById,
   getStageByConfig,
 } from "~/utils/roomConfigs";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/Avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import { api } from "~/utils/api";
