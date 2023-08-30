@@ -80,6 +80,10 @@ export const strikerRoomRouter = createTRPCRouter({
           },
         ],
       },
+      include: {
+        p1: { select: { name: true } },
+        p2: { select: { name: true } },
+      },
     });
   }),
   getRoomById: protectedProcedure

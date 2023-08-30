@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { useForm } from "react-hook-form";
 import { BeatLoader } from "react-spinners";
+import { OverviewCard } from "~/components/room/OverviewCard";
 import { api } from "~/utils/api";
 import { getConfigNamesByGame } from "~/utils/roomConfigs";
 
@@ -45,22 +46,27 @@ const Home: NextPage = () => {
     });
   };
 
-  const handleCancel = (id: string) => {
-    cancelStrikerRoom.mutate({ id });
-  };
-
-  if (!session) {
-    return <p>Please sign in to use Striker.</p>;
-  }
-
   return (
     <div className="mt-4 flex flex-col justify-center">
-      <div className="mb-8 flex justify-center pb-2 text-6xl leading-8 tracking-tight">
-        Striker
-      </div>
-      {loadingRooms ||
-      createStrikerRoom.isLoading ||
-      cancelStrikerRoom.isLoading ? (
+      <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-20">
+        <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center">
+          <h1 className="rounded-2xl px-4 py-1.5 text-6xl font-medium">
+            Striker
+          </h1>
+          <p className="max-w-[42rem] text-xl leading-normal text-gray-500 sm:text-3xl sm:leading-8">
+            Tournament Set Management
+          </p>
+        </div>
+      </section>
+      {!session ? (
+        <div className="flex justify-center">
+          <p className="max-w-[42rem] text-lg leading-normal sm:text-xl sm:leading-8">
+            Please sign in to create a Striker room
+          </p>
+        </div>
+      ) : loadingRooms ||
+        createStrikerRoom.isLoading ||
+        cancelStrikerRoom.isLoading ? (
         <div className="flex justify-center">
           <BeatLoader />
         </div>
@@ -107,6 +113,16 @@ const Home: NextPage = () => {
       {rooms && rooms.length > 0 && (
         <div className="flex flex-col items-center gap-4 pt-8">
           <div>Your Active Rooms</div>
+          <div className="flex flex-row gap-4">
+            {rooms?.slice(0, 3).map((room, idx) => (
+              <OverviewCard key={idx} {...room} />
+            ))}
+          </div>
+        </div>
+      )}
+      {/* {rooms && rooms.length > 0 && (
+        <div className="flex flex-col items-center gap-4 pt-8">
+          <div>Your Active Rooms</div>
           {rooms?.map((room, idx) => (
             <div key={idx} className="flex gap-2">
               <button onClick={() => void push(`/room/${room.id}`)}>
@@ -116,7 +132,7 @@ const Home: NextPage = () => {
             </div>
           ))}
         </div>
-      )}
+      )} */}
     </div>
   );
 };
