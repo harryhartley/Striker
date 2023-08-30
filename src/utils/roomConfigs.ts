@@ -30,6 +30,13 @@ export const fallbackCharacter: characterInterface = {
   default: true,
 };
 
+const fallbackStage: stageInterface = {
+  name: "Subway",
+  image: "https://i.imgur.com/Jni42P2.png",
+  width: "1050",
+  height: "510",
+};
+
 export const roomConfigs: roomConfigInterface[] = [
   {
     id: "clkp7ja74000008ju9zmg06n6",
@@ -232,4 +239,16 @@ export const getConfigById = (id: string): roomConfigInterface => {
   const config = roomConfigs.find((config) => config.id === id);
   if (!config) return roomConfigs[0]!;
   return config;
+};
+
+export const getStageByConfig = (
+  id: string,
+  stageNumber: number
+): stageInterface => {
+  const config = roomConfigs.find((config) => config.id === id);
+  if (!config) return fallbackStage;
+  return (
+    [...config.legalStages, ...config.counterpickStages][stageNumber] ??
+    fallbackStage
+  );
 };
