@@ -64,7 +64,12 @@ export const RoomForm = () => {
           </div>
         </div>
       </form>
-      <Button variant={"outline"} size={"lg"} onClick={handleCreate}>
+      <Button
+        className="h-12"
+        variant={"outline"}
+        size={"lg"}
+        onClick={handleCreate}
+      >
         Create a room
       </Button>
     </div>

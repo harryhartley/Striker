@@ -55,11 +55,11 @@ export const OverviewCard = ({
   const stage = getStageByConfig(configId, selectedStage);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="p-4">
+      <CardHeader className="mb-4">
         <CardTitle
           onClick={() => void push(`/room/${id}`)}
-          className="flex cursor-pointer flex-row items-center justify-around"
+          className="mb-4 flex cursor-pointer flex-row items-center justify-around"
         >
           <Avatar>
             <AvatarImage src={p1Character.image} />
@@ -84,7 +84,7 @@ export const OverviewCard = ({
       </CardHeader>
       <CardContent
         onClick={() => void push(`/room/${id}`)}
-        className="cursor-pointer"
+        className="mb-4 cursor-pointer"
       >
         <Image src={stage.image} alt={stage.name} width={200} height={200} />
       </CardContent>
