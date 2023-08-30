@@ -3,16 +3,24 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { BeatLoader } from "react-spinners";
 import { ThemeSwitch } from "./ThemeSwitch";
+import Image from "next/image";
+import { useRouter } from "next/router";
 
 export const Header = () => {
+  const { push } = useRouter();
   const { data: sessionData, status: sessionStatus } = useSession();
   const userId = sessionData?.user.id;
 
   return (
     <header className="flex items-center justify-between py-10">
-      <div className="text-2xl tracking-widest">
-        <a href={"/"}>STRKR</a>
-      </div>
+      <Image
+        src={"https://i.imgur.com/9TibLdJ.png"}
+        alt="Logo"
+        width={64}
+        height={64}
+        onClick={() => void push("/")}
+        className="cursor-pointer"
+      />
       <div className="flex items-center text-base leading-5">
         {sessionStatus === "loading" ? (
           <BeatLoader />
