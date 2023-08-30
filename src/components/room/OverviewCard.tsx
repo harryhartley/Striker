@@ -17,6 +17,8 @@ import { useRouter } from "next/router";
 import Image from "next/image";
 import { api } from "~/utils/api";
 import { ClipboardIcon, TrashIcon } from "@heroicons/react/20/solid";
+import { useState } from "react";
+import { BeatLoader } from "react-spinners";
 
 const roomWithUsers = Prisma.validator<Prisma.StrikerRoomDefaultArgs>()({
   include: { p1: { select: { name: true } }, p2: { select: { name: true } } },
@@ -36,10 +38,15 @@ export const OverviewCard = ({
   const { push } = useRouter();
   const utils = api.useContext();
 
+  const [deleting, setDeleting] = useState(false);
+
   const cancelStrikerRoom = api.strikerRoom.cancelRoom.useMutation({
-    onSuccess: () => utils.strikerRoom.getIncompleteRoomsByUserId.invalidate(),
+    onSuccess: () => {
+      void utils.strikerRoom.getIncompleteRoomsByUserId.invalidate();
+    },
   });
   const handleCancel = () => {
+    setDeleting(true);
     cancelStrikerRoom.mutate({ id });
   };
 
@@ -53,6 +60,14 @@ export const OverviewCard = ({
     ) ?? fallbackCharacter;
   const score = currentScore.split(",");
   const stage = getStageByConfig(configId, selectedStage);
+
+  if (deleting) {
+    return (
+      <Card className="p-4">
+        <BeatLoader />
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-4">
