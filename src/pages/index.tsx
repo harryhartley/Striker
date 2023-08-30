@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useForm } from "react-hook-form";
 import { BeatLoader } from "react-spinners";
 import { OverviewCard } from "~/components/room/OverviewCard";
+import { Button } from "~/components/ui/Button";
 import { api } from "~/utils/api";
 import { getConfigNamesByGame } from "~/utils/roomConfigs";
 
@@ -48,7 +49,7 @@ const Home: NextPage = () => {
 
   return (
     <div className="mt-4 flex flex-col justify-center">
-      <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-20">
+      <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-16">
         <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center">
           <h1 className="rounded-2xl px-4 py-1.5 text-6xl font-medium">
             Striker
@@ -99,6 +100,7 @@ const Home: NextPage = () => {
                   </div>
                 </div>
               </form>
+              <Button variant={"outline"}>Create a room</Button>
               <button
                 className="rounded bg-green-500 px-4
              py-2 text-4xl text-white hover:bg-green-700"
@@ -120,19 +122,6 @@ const Home: NextPage = () => {
           </div>
         </div>
       )}
-      {/* {rooms && rooms.length > 0 && (
-        <div className="flex flex-col items-center gap-4 pt-8">
-          <div>Your Active Rooms</div>
-          {rooms?.map((room, idx) => (
-            <div key={idx} className="flex gap-2">
-              <button onClick={() => void push(`/room/${room.id}`)}>
-                {room.id}
-              </button>
-              <button onClick={() => handleCancel(room.id)}>❌</button>
-            </div>
-          ))}
-        </div>
-      )} */}
     </div>
   );
 };

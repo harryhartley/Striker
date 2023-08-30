@@ -34,8 +34,11 @@ export const OverviewCard = ({
   selectedStage,
 }: OverviewCardProps) => {
   const { push } = useRouter();
+  const utils = api.useContext();
 
-  const cancelStrikerRoom = api.strikerRoom.cancelRoom.useMutation();
+  const cancelStrikerRoom = api.strikerRoom.cancelRoom.useMutation({
+    onSuccess: () => utils.strikerRoom.getIncompleteRoomsByUserId.invalidate(),
+  });
   const handleCancel = () => {
     cancelStrikerRoom.mutate({ id });
   };
@@ -92,7 +95,7 @@ export const OverviewCard = ({
           onClick={() =>
             void navigator.clipboard.writeText(`https://strkr.hyhy.gg/${id}`)
           }
-          className="cursor-pointer hover:text-gray-600"
+          className="cursor-pointer text-gray-800 hover:text-gray-500"
         />
         <TrashIcon
           height={24}

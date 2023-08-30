@@ -45,8 +45,15 @@ export const strikerRoomRouter = createTRPCRouter({
       const room = await ctx.prisma.strikerRoom.findFirst({
         where: {
           id: input.id,
-          p1Id: ctx.session.user.id,
           roomStatus: { in: ["Active", "Inactive"] },
+          OR: [
+            {
+              p1Id: ctx.session.user.id,
+            },
+            {
+              p2Id: ctx.session.user.id,
+            },
+          ],
         },
       });
       if (!room) {
@@ -58,8 +65,15 @@ export const strikerRoomRouter = createTRPCRouter({
       const cancelRoom = await ctx.prisma.strikerRoom.update({
         where: {
           id: input.id,
-          p1Id: ctx.session.user.id,
           roomStatus: { in: ["Active", "Inactive"] },
+          OR: [
+            {
+              p1Id: ctx.session.user.id,
+            },
+            {
+              p2Id: ctx.session.user.id,
+            },
+          ],
         },
         data: { roomStatus: RoomStatus.Canceled },
       });
