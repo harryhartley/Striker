@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { useIdleTimer } from "react-idle-timer";
 import { CopyToClipboardButton } from "~/components/CopyToClipboardButton";
+import { Scoreboard } from "~/components/room/Scoreboard";
 import { api } from "~/utils/api";
 import { PusherProvider, useSubscribeToEvent } from "~/utils/pusher";
 import {
@@ -69,7 +70,7 @@ const StrikerRoomCore = () => {
   } = api.strikerRoom.getRoomById.useQuery(
     { id: query.roomId as string },
     {
-      enabled: typeof query.roomId === "string",
+      enabled: typeof query.roomId === "string" && !!session,
       refetchOnWindowFocus: false,
       onSuccess: (data) => {
         if (data) {
@@ -617,38 +618,13 @@ const StrikerRoomCore = () => {
                 </h2>
               </>
             )}
-            <div className="flex items-end justify-center space-y-2 pt-4 md:space-y-5">
-              <div className="md:leading-14 flex w-auto flex-1 justify-center break-all text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
-                {room.p1.name}
-              </div>
-              <img
-                className="flex w-1/12 max-w-xs justify-center"
-                src={p1Character?.image}
-                alt={p1Character?.name}
-              />
-              <div className="md:leading-14 flex w-1/12 justify-center text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
-                vs
-              </div>
-              <img
-                className="flex w-1/12 max-w-xs justify-center"
-                src={p2Character?.image}
-                alt={p2Character?.name}
-              />
-              <div className="md:leading-14 flex w-auto flex-1 justify-center break-all text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
-                {room.p2?.name}
-              </div>
-            </div>
-            <div className="flex items-end justify-center gap-4 space-y-2 pb-6 md:space-y-5">
-              <h1 className="md:leading-14 text-xl  leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
-                {currentScore[0]}
-              </h1>
-              <h1 className="md:leading-14 text-xl  leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
-                -
-              </h1>
-              <h1 className="md:leading-14 text-xl  leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
-                {currentScore[1]}
-              </h1>
-            </div>
+            <Scoreboard
+              p1Name={room.p1.name}
+              p2Name={room.p2?.name}
+              p1Character={p1Character}
+              p2Character={p2Character}
+              currentScore={currentScore}
+            />
 
             {/* Blind character selection */}
             {roomStatus === "Active" && roomState === 1 && (
