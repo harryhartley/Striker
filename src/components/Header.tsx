@@ -5,6 +5,7 @@ import { BeatLoader } from "react-spinners";
 import { ThemeSwitch } from "./ThemeSwitch";
 import Image from "next/image";
 import { useRouter } from "next/router";
+import { Button } from "@/components/ui/button";
 
 export const Header = () => {
   const { push } = useRouter();
@@ -69,12 +70,12 @@ export const Header = () => {
             </div>
           </nav>
         ) : (
-          <div
-            className="cursor-pointer p-1 font-medium sm:p-4"
+          <button
+            className="max-w-[42rem] text-lg leading-normal sm:text-xl sm:leading-8"
             onClick={() => void signIn()}
           >
             Sign in
-          </div>
+          </button>
         )}
 
         <ThemeSwitch />
