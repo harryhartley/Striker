@@ -108,7 +108,9 @@ export const OverviewCard = ({
           height={24}
           width={24}
           onClick={() =>
-            void navigator.clipboard.writeText(`https://strkr.hyhy.gg/${id}`)
+            void navigator.clipboard.writeText(
+              `https://strkr.hyhy.gg/room/${id}`
+            )
           }
           className="cursor-pointer text-gray-800 hover:text-gray-500"
         />
