@@ -2,7 +2,7 @@ import { Character, RoomStatus } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { pusherServerClient } from "../../common/pusher";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 
 function randomIntFromIntervalInc(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -101,6 +101,17 @@ export const strikerRoomRouter = createTRPCRouter({
     });
   }),
   getRoomById: protectedProcedure
+    .input(z.object({ id: z.string().cuid() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.prisma.strikerRoom.findUnique({
+        where: { id: input.id },
+        include: {
+          p1: { select: { name: true } },
+          p2: { select: { name: true } },
+        },
+      });
+    }),
+  getRoomByIdForOverlay: publicProcedure
     .input(z.object({ id: z.string().cuid() }))
     .query(async ({ ctx, input }) => {
       return ctx.prisma.strikerRoom.findUnique({
