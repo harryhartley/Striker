@@ -2,10 +2,10 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { type GetServerSidePropsContext } from "next";
 import {
   getServerSession,
-  type NextAuthOptions,
   type DefaultSession,
+  type NextAuthOptions,
 } from "next-auth";
-import DiscordProvider from "next-auth/providers/discord";
+import DiscordProvider, { type DiscordProfile } from "next-auth/providers/discord";
 import { env } from "~/env.mjs";
 import { prisma } from "~/server/db";
 
@@ -16,6 +16,8 @@ import { prisma } from "~/server/db";
  * @see https://next-auth.js.org/getting-started/typescript#module-augmentation
  */
 declare module "next-auth" {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface Profile extends DiscordProfile {}
   interface Session extends DefaultSession {
     user: DefaultSession["user"] & {
       id: string;
@@ -44,6 +46,13 @@ export const authOptions: NextAuthOptions = {
         id: user.id,
       },
     }),
+    async signIn({ user, profile }) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { name: profile?.username, image: profile?.image_url },
+      })
+      return true
+    },
   },
   adapter: PrismaAdapter(prisma),
   providers: [
