@@ -8,6 +8,8 @@ import { SEO } from "~/components/SEO";
 import "~/styles/globals.css";
 import { api } from "~/utils/api";
 
+import { Analytics } from "@vercel/analytics/react";
+
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
@@ -15,6 +17,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
   return (
     <SessionProvider session={session}>
       <ThemeProvider attribute="class" defaultTheme={"system"}>
+        <Analytics />
         <Head>
           <meta content="width=device-width, initial-scale=1" name="viewport" />
         </Head>
