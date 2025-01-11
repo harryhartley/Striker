@@ -12,10 +12,11 @@ Striker manages the current match state and provides a simple UI for character s
 - Tailwind
 - tRPC
 - Prisma
+- Supabase
 - Pusher
 
 ## Development Instructions
 
 - Create a .env file using the .env.example file
-- `npm i`
-- `npm run dev`
+- `pnpm i`
+- `pnpm run dev`
