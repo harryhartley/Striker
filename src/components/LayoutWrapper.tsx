@@ -1,8 +1,8 @@
-import { Footer } from "./Footer";
-import { Header } from "./Header";
+import { Footer } from './layout/Footer'
+import { Header } from './layout/Header'
 
 interface LayoutWrapperProps {
-  children: JSX.Element;
+  children: JSX.Element
 }
 
 export const LayoutWrapper = ({ children }: LayoutWrapperProps) => {
@@ -14,5 +14,5 @@ export const LayoutWrapper = ({ children }: LayoutWrapperProps) => {
         <Footer />
       </div>
     </div>
-  );
-};
+  )
+}

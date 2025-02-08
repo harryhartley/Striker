@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: "Elements";
-  src: url("./fonts/Elements.ttf");
+  font-family: 'Elements';
+  src: url('./fonts/Elements.ttf');
 }
 
 @layer base {

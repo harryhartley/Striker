@@ -1,4 +1,4 @@
-import Head from "next/head";
+import Head from 'next/head'
 
 export const SEO = () => {
   return (
@@ -21,5 +21,5 @@ export const SEO = () => {
       <meta property="twitter:description" content="Striker is a" />
       <meta property="twitter:image" content="" /> */}
     </Head>
-  );
-};
+  )
+}

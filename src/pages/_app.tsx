@@ -1,14 +1,14 @@
-import { type Session } from "next-auth";
-import { SessionProvider } from "next-auth/react";
-import { ThemeProvider } from "next-themes";
-import { type AppType } from "next/app";
-import Head from "next/head";
-import { LayoutWrapper } from "~/components/LayoutWrapper";
-import { SEO } from "~/components/SEO";
-import "~/styles/globals.css";
-import { api } from "~/utils/api";
+import { type Session } from 'next-auth'
+import { SessionProvider } from 'next-auth/react'
+import { ThemeProvider } from 'next-themes'
+import { type AppType } from 'next/app'
+import Head from 'next/head'
+import { LayoutWrapper } from '~/components/LayoutWrapper'
+import { SEO } from '~/components/SEO'
+import '~/styles/globals.css'
+import { api } from '~/utils/api'
 
-import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from '@vercel/analytics/react'
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
@@ -16,7 +16,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
   return (
     <SessionProvider session={session}>
-      <ThemeProvider attribute="class" defaultTheme={"system"}>
+      <ThemeProvider attribute="class" defaultTheme={'system'}>
         <Analytics />
         <Head>
           <meta content="width=device-width, initial-scale=1" name="viewport" />
@@ -27,7 +27,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
         </LayoutWrapper>
       </ThemeProvider>
     </SessionProvider>
-  );
-};
+  )
+}
 
-export default api.withTRPC(MyApp);
+export default api.withTRPC(MyApp)

@@ -1,12 +1,12 @@
-import Image from "next/image";
-import type { characterInterface } from "~/utils/roomConfigs";
+import Image from 'next/image'
+import type { characterInterface } from '~/utils/roomConfigs'
 
 interface ScoreboardProps {
-  p1Name: string | null;
-  p2Name: string | null | undefined;
-  p1Character: characterInterface;
-  p2Character: characterInterface;
-  currentScore: [number, number];
+  p1Name: string | null
+  p2Name: string | null | undefined
+  p1Character: characterInterface
+  p2Character: characterInterface
+  currentScore: [number, number]
 }
 
 export const Scoreboard = ({
@@ -55,5 +55,5 @@ export const Scoreboard = ({
         </h1>
       </div>
     </>
-  );
-};
+  )
+}

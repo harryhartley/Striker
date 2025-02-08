@@ -1,18 +1,18 @@
-import { type NextPage } from "next";
-import { useSession } from "next-auth/react";
-import { BeatLoader } from "react-spinners";
-import { OverviewCard } from "~/components/room/OverviewCard";
-import { api } from "~/utils/api";
-import { RoomForm } from "~/components/room/RoomForm";
+import { type NextPage } from 'next'
+import { useSession } from 'next-auth/react'
+import { BeatLoader } from 'react-spinners'
+import { OverviewCard } from '~/components/room/OverviewCard'
+import { api } from '~/utils/api'
+import { RoomForm } from '~/components/room/RoomForm'
 
 const Home: NextPage = () => {
-  const { data: session } = useSession();
+  const { data: session } = useSession()
 
   const { data: rooms, isLoading: loadingRooms } =
     api.strikerRoom.getIncompleteRoomsByUserId.useQuery(undefined, {
       enabled: !!session,
       refetchOnWindowFocus: false,
-    });
+    })
 
   return (
     <div className="mt-4 flex flex-col justify-center">
@@ -53,7 +53,7 @@ const Home: NextPage = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default Home;
+export default Home

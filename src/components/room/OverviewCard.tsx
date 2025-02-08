@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from '@prisma/client'
 import {
   Card,
   CardContent,
@@ -6,24 +6,24 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from 'src/components/ui/card'
 import {
   fallbackCharacter,
   getConfigById,
   getStageByConfig,
-} from "~/utils/roomConfigs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useRouter } from "next/router";
-import Image from "next/image";
-import { api } from "~/utils/api";
-import { ClipboardIcon, TrashIcon } from "@heroicons/react/20/solid";
-import { useState } from "react";
-import { BeatLoader } from "react-spinners";
+} from '~/utils/roomConfigs'
+import { Avatar, AvatarFallback, AvatarImage } from 'src/components/ui/avatar'
+import { useRouter } from 'next/router'
+import Image from 'next/image'
+import { api } from '~/utils/api'
+import { ClipboardIcon, TrashIcon } from '@heroicons/react/20/solid'
+import { useState } from 'react'
+import { BeatLoader } from 'react-spinners'
 
 const roomWithUsers = Prisma.validator<Prisma.StrikerRoomDefaultArgs>()({
   include: { p1: { select: { name: true } }, p2: { select: { name: true } } },
-});
-type OverviewCardProps = Prisma.StrikerRoomGetPayload<typeof roomWithUsers>;
+})
+type OverviewCardProps = Prisma.StrikerRoomGetPayload<typeof roomWithUsers>
 
 export const OverviewCard = ({
   id,
@@ -35,38 +35,38 @@ export const OverviewCard = ({
   p2,
   selectedStage,
 }: OverviewCardProps) => {
-  const { push } = useRouter();
-  const utils = api.useContext();
+  const { push } = useRouter()
+  const utils = api.useContext()
 
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting] = useState(false)
 
   const cancelStrikerRoom = api.strikerRoom.cancelRoom.useMutation({
     onSuccess: () => {
-      void utils.strikerRoom.getIncompleteRoomsByUserId.invalidate();
+      void utils.strikerRoom.getIncompleteRoomsByUserId.invalidate()
     },
-  });
+  })
   const handleCancel = () => {
-    setDeleting(true);
-    cancelStrikerRoom.mutate({ id });
-  };
+    setDeleting(true)
+    cancelStrikerRoom.mutate({ id })
+  }
 
   const p1Character =
     getConfigById(configId).legalCharacters.find(
       (x) => x.name === p1SelectedCharacter
-    ) ?? fallbackCharacter;
+    ) ?? fallbackCharacter
   const p2Character =
     getConfigById(configId).legalCharacters.find(
       (x) => x.name === p2SelectedCharacter
-    ) ?? fallbackCharacter;
-  const score = currentScore.split(",");
-  const stage = getStageByConfig(configId, selectedStage);
+    ) ?? fallbackCharacter
+  const score = currentScore.split(',')
+  const stage = getStageByConfig(configId, selectedStage)
 
   if (deleting) {
     return (
       <Card className="p-4">
         <BeatLoader />
       </Card>
-    );
+    )
   }
 
   return (
@@ -93,7 +93,7 @@ export const OverviewCard = ({
           <p>{score[0]}</p>
           <p>{p1.name}</p>
           <p>-</p>
-          <p>{p2?.name ?? "..."}</p>
+          <p>{p2?.name ?? '...'}</p>
           <p>{score[1]}</p>
         </CardDescription>
       </CardHeader>
@@ -122,5 +122,5 @@ export const OverviewCard = ({
         />
       </CardFooter>
     </Card>
-  );
-};
+  )
+}

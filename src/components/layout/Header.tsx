@@ -1,29 +1,28 @@
 /* eslint-disable @next/next/no-img-element */
-import { signIn, signOut, useSession } from "next-auth/react";
-import Link from "next/link";
-import { BeatLoader } from "react-spinners";
-import { ThemeSwitch } from "./ThemeSwitch";
-import Image from "next/image";
-import { useRouter } from "next/router";
-import { Button } from "@/components/ui/button";
+import { signIn, signOut, useSession } from 'next-auth/react'
+import Link from 'next/link'
+import { BeatLoader } from 'react-spinners'
+import { ThemeSwitch } from '../ThemeSwitch'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
 
 export const Header = () => {
-  const { push } = useRouter();
-  const { data: sessionData, status: sessionStatus } = useSession();
-  const userId = sessionData?.user.id;
+  const { push } = useRouter()
+  const { data: sessionData, status: sessionStatus } = useSession()
+  const userId = sessionData?.user.id
 
   return (
     <header className="flex items-center justify-between py-10">
       <Image
-        src={"https://i.imgur.com/9TibLdJ.png"}
+        src={'https://i.imgur.com/9TibLdJ.png'}
         alt="Logo"
         width={64}
         height={64}
-        onClick={() => void push("/")}
+        onClick={() => void push('/')}
         className="cursor-pointer"
       />
       <div className="flex items-center text-base leading-5">
-        {sessionStatus === "loading" ? (
+        {sessionStatus === 'loading' ? (
           <BeatLoader />
         ) : sessionData ? (
           <nav
@@ -41,7 +40,7 @@ export const Header = () => {
                         </div>
                         <img
                           className="h-10 w-10 rounded-full"
-                          src={sessionData?.user.image ?? ""}
+                          src={sessionData?.user.image ?? ''}
                           alt="Profile Picture"
                         ></img>
                       </div>
@@ -54,7 +53,7 @@ export const Header = () => {
                   <div className="grid grid-cols-1">
                     <Link
                       className="p-1 font-medium sm:p-4"
-                      href={{ pathname: "/user/[userId]", query: { userId } }}
+                      href={{ pathname: '/user/[userId]', query: { userId } }}
                     >
                       Profile
                     </Link>
@@ -81,5 +80,5 @@ export const Header = () => {
         <ThemeSwitch />
       </div>
     </header>
-  );
-};
+  )
+}

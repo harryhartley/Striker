@@ -1,67 +1,67 @@
 /* eslint-disable @next/next/no-img-element */
-import { type Character, type RoomStatus } from "@prisma/client";
-import { useSession } from "next-auth/react";
-import dynamic from "next/dynamic";
-import Link from "next/link";
-import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
-import { useIdleTimer } from "react-idle-timer";
-import { CopyToClipboardButton } from "~/components/CopyToClipboardButton";
-import { Scoreboard } from "~/components/room/Scoreboard";
-import { api } from "~/utils/api";
-import { PusherProvider, useSubscribeToEvent } from "~/utils/pusher";
+import { type Character, type RoomStatus } from '@prisma/client'
+import { useSession } from 'next-auth/react'
+import dynamic from 'next/dynamic'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import { useIdleTimer } from 'react-idle-timer'
+import { CopyToClipboardButton } from '~/components/CopyToClipboardButton'
+import { Scoreboard } from '~/components/room/Scoreboard'
+import { api } from '~/utils/api'
+import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher'
 import {
   fallbackCharacter,
   getConfigById,
   type roomConfigInterface,
-} from "~/utils/roomConfigs";
+} from '~/utils/roomConfigs'
 
 const firstMissingNumber = (current: number[], length: number): number => {
-  const currentSorted = current.sort();
+  const currentSorted = current.sort()
   for (let i = 0; i < length; i++) {
-    if (currentSorted[i] != i) return i;
+    if (currentSorted[i] != i) return i
   }
-  return -1;
-};
+  return -1
+}
 
 const bansStringToList = (bans: string): number[] => {
-  if (bans === "") return [];
-  return bans.split(",").map(Number);
-};
+  if (bans === '') return []
+  return bans.split(',').map(Number)
+}
 
 const StrikerRoomCore = () => {
-  const { data: session } = useSession();
+  const { data: session } = useSession()
 
-  const { query, push } = useRouter();
+  const { query, push } = useRouter()
 
   useIdleTimer({
     timeout: 1000 * 60 * 10,
     onIdle: () => {
-      void push("/");
+      void push('/')
     },
-  });
+  })
 
-  const [roomStatus, setStateRoomStatus] = useState<RoomStatus>("Inactive");
-  const [roomState, setStateRoomState] = useState(0);
+  const [roomStatus, setStateRoomStatus] = useState<RoomStatus>('Inactive')
+  const [roomState, setStateRoomState] = useState(0)
   const [currentScore, setStateCurrentScore] = useState<[number, number]>([
     0, 0,
-  ]);
-  const [p1Character, setStateP1Character] = useState(fallbackCharacter);
-  const [p2Character, setStateP2Character] = useState(fallbackCharacter);
-  const [p1CharacterLocked, setStateP1CharacterLocked] = useState(false);
-  const [p2CharacterLocked, setStateP2CharacterLocked] = useState(false);
-  const [mostRecentWinner, setStateMostRecentWinner] = useState(-1);
-  const [selectedStage, setStateSelectedStage] = useState(0);
-  const [currentBans, setStateCurrentBans] = useState<number[]>([]);
-  const [firstBan, setStateFirstBan] = useState<number>(0);
-  const [revertRequested, setStateRevertRequested] = useState(0);
-  const [configId, setStateConfigId] = useState("");
-  const [bestOf, setStateBestOf] = useState(1);
-  const [steamUrl, setStateSteamUrl] = useState<string | undefined>(undefined);
+  ])
+  const [p1Character, setStateP1Character] = useState(fallbackCharacter)
+  const [p2Character, setStateP2Character] = useState(fallbackCharacter)
+  const [p1CharacterLocked, setStateP1CharacterLocked] = useState(false)
+  const [p2CharacterLocked, setStateP2CharacterLocked] = useState(false)
+  const [mostRecentWinner, setStateMostRecentWinner] = useState(-1)
+  const [selectedStage, setStateSelectedStage] = useState(0)
+  const [currentBans, setStateCurrentBans] = useState<number[]>([])
+  const [firstBan, setStateFirstBan] = useState<number>(0)
+  const [revertRequested, setStateRevertRequested] = useState(0)
+  const [configId, setStateConfigId] = useState('')
+  const [bestOf, setStateBestOf] = useState(1)
+  const [steamUrl, setStateSteamUrl] = useState<string | undefined>(undefined)
 
-  const [confirmResult, setConfirmResult] = useState(false);
+  const [confirmResult, setConfirmResult] = useState(false)
 
-  const [iAmPlayer, setIAmPlayer] = useState<number | null>(null);
+  const [iAmPlayer, setIAmPlayer] = useState<number | null>(null)
 
   const {
     data: room,
@@ -70,377 +70,377 @@ const StrikerRoomCore = () => {
   } = api.strikerRoom.getRoomById.useQuery(
     { id: query.roomId as string },
     {
-      enabled: typeof query.roomId === "string" && !!session,
+      enabled: typeof query.roomId === 'string' && !!session,
       refetchOnWindowFocus: false,
       onSuccess: (data) => {
         if (data) {
-          setStateRoomStatus(data.roomStatus);
-          setStateRoomState(data.roomState);
+          setStateRoomStatus(data.roomStatus)
+          setStateRoomState(data.roomState)
           setStateCurrentScore(
-            data.currentScore.split(",").map(Number) as [number, number]
-          );
+            data.currentScore.split(',').map(Number) as [number, number]
+          )
           setStateP1Character(
             getConfigById(data.configId).legalCharacters.find(
               (x) => x.name === data.p1SelectedCharacter
             ) ?? fallbackCharacter
-          );
+          )
           setStateP2Character(
             getConfigById(data.configId).legalCharacters.find(
               (x) => x.name === data.p2SelectedCharacter
             ) ?? fallbackCharacter
-          );
-          setStateP1CharacterLocked(data.p1CharacterLocked);
-          setStateP2CharacterLocked(data.p2CharacterLocked);
-          setStateMostRecentWinner(data.mostRecentWinner);
-          setStateSelectedStage(data.selectedStage);
-          setStateCurrentBans(bansStringToList(data.currentBans));
-          setStateFirstBan(data.firstBan);
-          setStateRevertRequested(data.revertRequested);
-          setStateConfigId(data.configId);
-          setStateBestOf(data.bestOf);
-          setStateSteamUrl(data.steamUrl ?? undefined);
+          )
+          setStateP1CharacterLocked(data.p1CharacterLocked)
+          setStateP2CharacterLocked(data.p2CharacterLocked)
+          setStateMostRecentWinner(data.mostRecentWinner)
+          setStateSelectedStage(data.selectedStage)
+          setStateCurrentBans(bansStringToList(data.currentBans))
+          setStateFirstBan(data.firstBan)
+          setStateRevertRequested(data.revertRequested)
+          setStateConfigId(data.configId)
+          setStateBestOf(data.bestOf)
+          setStateSteamUrl(data.steamUrl ?? undefined)
 
           if (data.p1Id === session?.user.id) {
-            setIAmPlayer(1);
+            setIAmPlayer(1)
           } else if (data.p2Id === session?.user.id) {
-            setIAmPlayer(2);
+            setIAmPlayer(2)
           }
         }
       },
     }
-  );
+  )
 
   const [roomConfig, setStateRoomConfig] = useState<roomConfigInterface>({
-    id: "",
-    name: "",
-    description: "",
-    gameName: "",
+    id: '',
+    name: '',
+    description: '',
+    gameName: '',
     numberOfBans: 0,
     winnerCharacterLocked: false,
     legalCharacters: [],
     legalStages: [],
     counterpickStages: [],
     bannedStages: [],
-  });
+  })
 
   useEffect(() => {
-    setStateRoomConfig(getConfigById(configId));
-  }, [configId]);
+    setStateRoomConfig(getConfigById(configId))
+  }, [configId])
 
-  useSubscribeToEvent("set-p2-id", () => {
-    void refetch();
-  });
+  useSubscribeToEvent('set-p2-id', () => {
+    void refetch()
+  })
 
-  useSubscribeToEvent("remove-p2-id", () => {
-    void refetch();
-  });
+  useSubscribeToEvent('remove-p2-id', () => {
+    void refetch()
+  })
 
-  useSubscribeToEvent("set-room-status", (data: { roomStatus: RoomStatus }) => {
-    setStateRoomStatus(data.roomStatus);
-  });
+  useSubscribeToEvent('set-room-status', (data: { roomStatus: RoomStatus }) => {
+    setStateRoomStatus(data.roomStatus)
+  })
 
   useSubscribeToEvent(
-    "set-character-locked",
+    'set-character-locked',
     (data: { playerNumber: number; characterLocked: boolean }) => {
       if (data.playerNumber === 1) {
-        setStateP1CharacterLocked(data.characterLocked);
+        setStateP1CharacterLocked(data.characterLocked)
       } else {
-        setStateP2CharacterLocked(data.characterLocked);
+        setStateP2CharacterLocked(data.characterLocked)
       }
     }
-  );
+  )
 
   useSubscribeToEvent(
-    "both-characters-locked",
+    'both-characters-locked',
     (data: { roomState: number }) => {
-      setStateRoomState(data.roomState);
-      setStateP1CharacterLocked(false);
-      setStateP2CharacterLocked(false);
+      setStateRoomState(data.roomState)
+      setStateP1CharacterLocked(false)
+      setStateP2CharacterLocked(false)
     }
-  );
+  )
 
-  useSubscribeToEvent("set-room-state", (data: { roomState: number }) => {
-    setStateRoomState(data.roomState);
-  });
+  useSubscribeToEvent('set-room-state', (data: { roomState: number }) => {
+    setStateRoomState(data.roomState)
+  })
 
   useSubscribeToEvent(
-    "set-character",
+    'set-character',
     (data: {
-      character: Character;
-      playerNumber: number;
-      requester: string;
+      character: Character
+      playerNumber: number
+      requester: string
     }) => {
       if (session?.user.id !== data.requester) {
         if (data.playerNumber === 1) {
           setStateP1Character(
             roomConfig.legalCharacters.find((x) => x.name === data.character) ??
               fallbackCharacter
-          );
+          )
         } else {
           setStateP2Character(
             roomConfig.legalCharacters.find((x) => x.name === data.character) ??
               fallbackCharacter
-          );
+          )
         }
       }
     }
-  );
+  )
 
   useSubscribeToEvent(
-    "set-current-bans",
+    'set-current-bans',
     (data: { currentBans: string; requester: string }) => {
       if (session?.user.id !== data.requester) {
-        setStateCurrentBans(bansStringToList(data.currentBans));
+        setStateCurrentBans(bansStringToList(data.currentBans))
       }
     }
-  );
+  )
 
   useSubscribeToEvent(
-    "set-selected-stage",
+    'set-selected-stage',
     (data: { selectedStage: number; requester: string }) => {
       if (session?.user.id !== data.requester) {
-        setStateSelectedStage(data.selectedStage);
+        setStateSelectedStage(data.selectedStage)
       }
     }
-  );
+  )
 
   useSubscribeToEvent(
-    "set-current-score",
+    'set-current-score',
     (data: { currentScore: string; requester: string }) => {
       if (session?.user.id !== data.requester) {
         setStateCurrentScore(
-          data.currentScore.split(",").map(Number) as [number, number]
-        );
+          data.currentScore.split(',').map(Number) as [number, number]
+        )
       }
     }
-  );
+  )
 
   useSubscribeToEvent(
-    "set-most-recent-winner",
+    'set-most-recent-winner',
     (data: { mostRecentWinner: number }) => {
-      setStateMostRecentWinner(data.mostRecentWinner);
+      setStateMostRecentWinner(data.mostRecentWinner)
     }
-  );
+  )
 
   useSubscribeToEvent(
-    "advance-room-state",
+    'advance-room-state',
     (data: { roomState: number; requester: string }) => {
       if (session?.user.id !== data.requester) {
-        setStateRoomState(data.roomState);
+        setStateRoomState(data.roomState)
       }
     }
-  );
+  )
 
   useSubscribeToEvent(
-    "set-first-ban",
+    'set-first-ban',
     (data: { firstBan: number; requester: string }) => {
       if (session?.user.id !== data.requester) {
-        setStateFirstBan(data.firstBan);
+        setStateFirstBan(data.firstBan)
       }
     }
-  );
+  )
 
-  useSubscribeToEvent("cancel-room", () => {
-    setStateRoomStatus("Canceled");
-  });
+  useSubscribeToEvent('cancel-room', () => {
+    setStateRoomStatus('Canceled')
+  })
 
   useSubscribeToEvent(
-    "revert-requested",
+    'revert-requested',
     (data: { requesterNumber: number; requester: string }) => {
       if (session?.user.id !== data.requester) {
-        setStateRevertRequested(data.requesterNumber);
+        setStateRevertRequested(data.requesterNumber)
       }
     }
-  );
+  )
 
-  useSubscribeToEvent("revert-room", () => {
-    void refetch();
-  });
+  useSubscribeToEvent('revert-room', () => {
+    void refetch()
+  })
 
-  const setP2Id = api.strikerRoom.setP2Id.useMutation();
+  const setP2Id = api.strikerRoom.setP2Id.useMutation()
   const handleSetP2Id = () => {
     if (session) {
-      setP2Id.mutate({ id: query.roomId as string, p2Id: session.user.id });
+      setP2Id.mutate({ id: query.roomId as string, p2Id: session.user.id })
     }
-  };
+  }
 
-  const removeP2Id = api.strikerRoom.removeP2Id.useMutation();
+  const removeP2Id = api.strikerRoom.removeP2Id.useMutation()
   const handleRemoveP2Id = () => {
     if (session) {
-      removeP2Id.mutate({ id: query.roomId as string });
+      removeP2Id.mutate({ id: query.roomId as string })
     }
-  };
+  }
 
-  const setRoomStatus = api.strikerRoom.setRoomStatus.useMutation();
+  const setRoomStatus = api.strikerRoom.setRoomStatus.useMutation()
   const handleSetRoomStatus = (roomStatus: RoomStatus) => {
     if (session) {
-      setStateRoomStatus(roomStatus);
+      setStateRoomStatus(roomStatus)
       setRoomStatus.mutate({
         id: query.roomId as string,
         roomStatus,
-      });
+      })
     }
-  };
+  }
 
-  const setCharacterLocked = api.strikerRoom.setCharacterLocked.useMutation();
+  const setCharacterLocked = api.strikerRoom.setCharacterLocked.useMutation()
   const handleSetCharacterLocked = (
     playerNumber: number,
     characterLocked: boolean
   ) => {
     if (session) {
       if (playerNumber === 1) {
-        setStateP1CharacterLocked(characterLocked);
+        setStateP1CharacterLocked(characterLocked)
       } else {
-        setStateP2CharacterLocked(characterLocked);
+        setStateP2CharacterLocked(characterLocked)
       }
       setCharacterLocked.mutate({
         id: query.roomId as string,
         characterLocked,
         playerNumber,
-      });
+      })
     }
-  };
+  }
 
-  const advanceRoomState = api.strikerRoom.advanceRoomState.useMutation();
+  const advanceRoomState = api.strikerRoom.advanceRoomState.useMutation()
   const handleAdvanceRoomState = (roomState: number) => {
     if (session) {
-      setStateRoomState(roomState);
+      setStateRoomState(roomState)
       advanceRoomState.mutate({
         id: query.roomId as string,
         roomState,
-      });
+      })
     }
-  };
+  }
 
-  const setCharacter = api.strikerRoom.setCharacter.useMutation();
+  const setCharacter = api.strikerRoom.setCharacter.useMutation()
   const handleSetCharacter = (playerNumber: number, character: Character) => {
     if (session) {
       if (playerNumber === 1) {
         setStateP1Character(
           roomConfig.legalCharacters.find((x) => x.name === character) ??
             fallbackCharacter
-        );
+        )
       } else {
         setStateP2Character(
           roomConfig.legalCharacters.find((x) => x.name === character) ??
             fallbackCharacter
-        );
+        )
       }
       setCharacter.mutate({
         id: query.roomId as string,
         playerNumber,
         character,
         requesterNumber: playerNumber,
-      });
+      })
     }
-  };
+  }
 
-  const setCurrentBans = api.strikerRoom.setCurrentBans.useMutation();
+  const setCurrentBans = api.strikerRoom.setCurrentBans.useMutation()
   const handleSetCurrentBans = (currentBans: string) => {
     if (session) {
-      setStateCurrentBans(bansStringToList(currentBans));
+      setStateCurrentBans(bansStringToList(currentBans))
       setCurrentBans.mutate({
         id: query.roomId as string,
         currentBans,
-      });
+      })
     }
-  };
+  }
 
-  const setSelectedStage = api.strikerRoom.setSelectedStage.useMutation();
+  const setSelectedStage = api.strikerRoom.setSelectedStage.useMutation()
   const handleSetSelectedStage = (selectedStage: number) => {
     if (session) {
-      setStateSelectedStage(selectedStage);
+      setStateSelectedStage(selectedStage)
       setSelectedStage.mutate({
         id: query.roomId as string,
         selectedStage,
-      });
+      })
     }
-  };
+  }
 
-  const setCurrentScore = api.strikerRoom.setCurrentScore.useMutation();
+  const setCurrentScore = api.strikerRoom.setCurrentScore.useMutation()
   const handleSetCurrentScore = (currentScore: [number, number]) => {
     if (session) {
-      setStateCurrentScore(currentScore);
+      setStateCurrentScore(currentScore)
       setCurrentScore.mutate({
         id: query.roomId as string,
-        currentScore: currentScore.join(","),
-      });
+        currentScore: currentScore.join(','),
+      })
     }
-  };
+  }
 
-  const setMostRecentWinner = api.strikerRoom.setMostRecentWinner.useMutation();
+  const setMostRecentWinner = api.strikerRoom.setMostRecentWinner.useMutation()
   const handleSetMostRecentWinner = (
     mostRecentWinner: number,
     stageName: string
   ) => {
     if (session) {
-      setStateMostRecentWinner(mostRecentWinner);
+      setStateMostRecentWinner(mostRecentWinner)
       setMostRecentWinner.mutate({
         id: query.roomId as string,
         mostRecentWinner,
         stageName,
-      });
+      })
     }
-  };
+  }
 
-  const setRevert = api.strikerRoom.revertToLastSafeState.useMutation();
+  const setRevert = api.strikerRoom.revertToLastSafeState.useMutation()
   const handleSetRevert = (requesterNumber: number) => {
     if (session) {
-      setStateRevertRequested(iAmPlayer ?? 0);
+      setStateRevertRequested(iAmPlayer ?? 0)
       setRevert.mutate({
         id: query.roomId as string,
         requesterNumber,
-      });
+      })
     }
-  };
+  }
 
-  const [currentBanner, setCurrentBanner] = useState(0);
+  const [currentBanner, setCurrentBanner] = useState(0)
   useEffect(() => {
     if (mostRecentWinner === 1) {
       if (currentBans.length < roomConfig.numberOfBans) {
-        setCurrentBanner(1);
+        setCurrentBanner(1)
       } else {
-        setCurrentBanner(2);
+        setCurrentBanner(2)
       }
     } else if (mostRecentWinner === 2) {
       if (currentBans.length < roomConfig.numberOfBans) {
-        setCurrentBanner(2);
+        setCurrentBanner(2)
       } else {
-        setCurrentBanner(1);
+        setCurrentBanner(1)
       }
     } else {
       if (
         (((currentBans.length - 1) % 4) + 4) % 4 === 0 ||
         (((currentBans.length - 2) % 4) + 4) % 4 === 0
       ) {
-        setCurrentBanner(firstBan === 1 ? 2 : 1);
+        setCurrentBanner(firstBan === 1 ? 2 : 1)
       } else {
-        setCurrentBanner(firstBan === 1 ? 1 : 2);
+        setCurrentBanner(firstBan === 1 ? 1 : 2)
       }
     }
-  }, [currentBans, firstBan, mostRecentWinner, roomConfig.numberOfBans]);
+  }, [currentBans, firstBan, mostRecentWinner, roomConfig.numberOfBans])
 
   return (
     <>
-      {typeof query.roomId !== "string" && <div>Bad ID</div>}
+      {typeof query.roomId !== 'string' && <div>Bad ID</div>}
 
-      {typeof query.roomId === "string" && !session && (
+      {typeof query.roomId === 'string' && !session && (
         <div>Not authorised. Please sign in to view this page.</div>
       )}
 
-      {typeof query.roomId === "string" && session && isLoading && (
+      {typeof query.roomId === 'string' && session && isLoading && (
         <div>Loading...</div>
       )}
 
-      {typeof query.roomId === "string" && session && !isLoading && !room && (
+      {typeof query.roomId === 'string' && session && !isLoading && !room && (
         <div>Room not found</div>
       )}
 
-      {typeof query.roomId === "string" &&
+      {typeof query.roomId === 'string' &&
         session &&
         !isLoading &&
         room &&
-        roomStatus === "Inactive" && (
+        roomStatus === 'Inactive' && (
           <>
             {room.p1Id === session?.user.id && !room.p2Id && (
               <>
@@ -449,7 +449,7 @@ const StrikerRoomCore = () => {
                     {room.p1.name}
                   </div>
                   <div className="md:leading-14 flex w-auto flex-1 justify-center break-all text-2xl font-extrabold leading-9 tracking-tight sm:text-3xl sm:leading-10 md:text-5xl">
-                    {room.p2?.name ?? "..."}
+                    {room.p2?.name ?? '...'}
                   </div>
                 </div>
 
@@ -458,13 +458,13 @@ const StrikerRoomCore = () => {
                   <div>Best of {bestOf}</div>
                   <div>{roomConfig.numberOfBans} Bans</div>
                   <div>
-                    Character Locked:{" "}
-                    {roomConfig.winnerCharacterLocked ? "✅" : "❌"}
+                    Character Locked:{' '}
+                    {roomConfig.winnerCharacterLocked ? '✅' : '❌'}
                   </div>
                   <div>
-                    RPS Winner:{" "}
+                    RPS Winner:{' '}
                     {room.firstBan === 0
-                      ? "Random"
+                      ? 'Random'
                       : room.firstBan === 1
                       ? room.p1.name
                       : room.p2?.name}
@@ -544,13 +544,13 @@ const StrikerRoomCore = () => {
                   <div>Best of {bestOf}</div>
                   <div>{roomConfig.numberOfBans} Bans</div>
                   <div>
-                    Character Locked:{" "}
-                    {roomConfig.winnerCharacterLocked ? "✅" : "❌"}
+                    Character Locked:{' '}
+                    {roomConfig.winnerCharacterLocked ? '✅' : '❌'}
                   </div>
                   <div>
-                    First Ban (RPS):{" "}
+                    First Ban (RPS):{' '}
                     {room.firstBan === 0
-                      ? "Random"
+                      ? 'Random'
                       : room.firstBan === 1
                       ? room.p1.name
                       : room.p2?.name}
@@ -583,8 +583,8 @@ const StrikerRoomCore = () => {
                       className="rounded bg-green-500 px-4
              py-2 text-4xl  text-white hover:bg-green-700"
                       onClick={() => {
-                        handleAdvanceRoomState(roomState + 1);
-                        handleSetRoomStatus("Active");
+                        handleAdvanceRoomState(roomState + 1)
+                        handleSetRoomStatus('Active')
                       }}
                     >
                       Start
@@ -600,15 +600,15 @@ const StrikerRoomCore = () => {
           </>
         )}
 
-      {typeof query.roomId === "string" &&
+      {typeof query.roomId === 'string' &&
         session &&
         !isLoading &&
         room &&
-        roomStatus !== "Inactive" && (
+        roomStatus !== 'Inactive' && (
           <>
-            {roomStatus === "Canceled" && <div>Game Canceled</div>}
+            {roomStatus === 'Canceled' && <div>Game Canceled</div>}
 
-            {roomStatus === "Complete" && (
+            {roomStatus === 'Complete' && (
               <>
                 <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
                   Match Complete
@@ -627,7 +627,7 @@ const StrikerRoomCore = () => {
             />
 
             {/* Blind character selection */}
-            {roomStatus === "Active" && roomState === 1 && (
+            {roomStatus === 'Active' && roomState === 1 && (
               <>
                 <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
                   {iAmPlayer === 1 ? room.p1.name : room.p2?.name}: Pick your
@@ -639,31 +639,31 @@ const StrikerRoomCore = () => {
                       onClick={() => {
                         if (iAmPlayer === 1) {
                           if (!p1CharacterLocked) {
-                            handleSetCharacterLocked(1, true);
+                            handleSetCharacterLocked(1, true)
                           }
                         } else if (iAmPlayer === 2) {
                           if (!p2CharacterLocked) {
-                            handleSetCharacterLocked(2, true);
+                            handleSetCharacterLocked(2, true)
                           }
                         }
                       }}
                       className={`rounded ${
                         iAmPlayer === 1
                           ? p1CharacterLocked
-                            ? "bg-red-500"
-                            : "bg-green-500"
+                            ? 'bg-red-500'
+                            : 'bg-green-500'
                           : p2CharacterLocked
-                          ? "bg-red-500"
-                          : "bg-green-500"
+                          ? 'bg-red-500'
+                          : 'bg-green-500'
                       } px-4 py-2 text-2xl text-white`}
                     >
                       {iAmPlayer === 1
                         ? p1CharacterLocked
-                          ? "LOCKED"
-                          : "LOCK IN"
+                          ? 'LOCKED'
+                          : 'LOCK IN'
                         : p2CharacterLocked
-                        ? "LOCKED"
-                        : "LOCK IN"}
+                        ? 'LOCKED'
+                        : 'LOCK IN'}
                     </button>
                   )}
                   <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-10">
@@ -672,17 +672,11 @@ const StrikerRoomCore = () => {
                         onClick={() => {
                           if (iAmPlayer === 1) {
                             if (!p1CharacterLocked) {
-                              handleSetCharacter(
-                                1,
-                                character.name as Character
-                              );
+                              handleSetCharacter(1, character.name as Character)
                             }
                           } else if (iAmPlayer === 2) {
                             if (!p2CharacterLocked) {
-                              handleSetCharacter(
-                                2,
-                                character.name as Character
-                              );
+                              handleSetCharacter(2, character.name as Character)
                             }
                           }
                         }}
@@ -693,8 +687,8 @@ const StrikerRoomCore = () => {
                           className={`rounded-lg bg-white ${
                             (iAmPlayer === 1 && !p1CharacterLocked) ||
                             (iAmPlayer === 2 && !p2CharacterLocked)
-                              ? "hover:bg-slate-200"
-                              : ""
+                              ? 'hover:bg-slate-200'
+                              : ''
                           }`}
                           src={character.image}
                           alt={character.name}
@@ -707,14 +701,14 @@ const StrikerRoomCore = () => {
             )}
 
             {/* Stage striking */}
-            {roomStatus === "Active" && roomState === 2 && (
+            {roomStatus === 'Active' && roomState === 2 && (
               <>
                 <h2 className="flex justify-center pb-2 text-2xl  leading-8 tracking-tight">
-                  {currentBanner === 1 ? room.p1.name : room.p2?.name}: Ban{" "}
+                  {currentBanner === 1 ? room.p1.name : room.p2?.name}: Ban{' '}
                   {currentBans.length % 2 === 0 ||
                   currentBans.length === roomConfig.legalStages.length - 2
-                    ? "1 stage"
-                    : "2 stages"}
+                    ? '1 stage'
+                    : '2 stages'}
                 </h2>
                 <div className="grid gap-4">
                   <div className="relative  text-white">
@@ -727,32 +721,32 @@ const StrikerRoomCore = () => {
                       {roomConfig.legalStages[selectedStage]?.name}
                     </div>
                     <div className="absolute bottom-2 right-4 text-lg sm:text-3xl">
-                      Width: {roomConfig.legalStages[selectedStage]?.width}{" "}
+                      Width: {roomConfig.legalStages[selectedStage]?.width}{' '}
                       Height: {roomConfig.legalStages[selectedStage]?.height}
                     </div>
                     {iAmPlayer === currentBanner && (
                       <button
                         onClick={() => {
-                          const newBans = [...currentBans, selectedStage];
-                          handleSetCurrentBans(newBans.join(","));
+                          const newBans = [...currentBans, selectedStage]
+                          handleSetCurrentBans(newBans.join(','))
                           handleSetSelectedStage(
                             firstMissingNumber(
                               newBans,
                               roomConfig.legalStages.length
                             )
-                          );
+                          )
                           if (
                             newBans.length ===
                             roomConfig.legalStages.length - 1
                           ) {
-                            handleAdvanceRoomState(roomState + 1);
+                            handleAdvanceRoomState(roomState + 1)
                             handleSetSelectedStage(
                               firstMissingNumber(
                                 newBans,
                                 roomConfig.legalStages.length
                               )
-                            );
-                            handleSetCurrentBans("");
+                            )
+                            handleSetCurrentBans('')
                           }
                         }}
                         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded bg-red-500 px-4 py-2 text-4xl  text-white hover:bg-red-700"
@@ -769,7 +763,7 @@ const StrikerRoomCore = () => {
                             iAmPlayer === currentBanner &&
                             !currentBans.includes(idx)
                           ) {
-                            handleSetSelectedStage(idx);
+                            handleSetSelectedStage(idx)
                           }
                         }}
                         className="relative"
@@ -778,10 +772,10 @@ const StrikerRoomCore = () => {
                         <img
                           className={`rounded-xl border-4 ${
                             selectedStage === idx
-                              ? "border-blue-600"
+                              ? 'border-blue-600'
                               : currentBans.includes(idx)
-                              ? "border-red-600"
-                              : "cursor-pointer border-green-600"
+                              ? 'border-red-600'
+                              : 'cursor-pointer border-green-600'
                           }`}
                           src={stage.image}
                           alt={stage.name}
@@ -799,7 +793,7 @@ const StrikerRoomCore = () => {
             )}
 
             {/* Wait for game result - can only report a game loss */}
-            {roomStatus === "Active" &&
+            {roomStatus === 'Active' &&
               roomState >= 3 &&
               roomState % 3 === 0 && (
                 <>
@@ -818,34 +812,34 @@ const StrikerRoomCore = () => {
                           disabled={!iAmPlayer || iAmPlayer === 1}
                           onClick={() => {
                             if (!confirmResult) {
-                              setConfirmResult(true);
+                              setConfirmResult(true)
                             } else {
-                              setConfirmResult(false);
+                              setConfirmResult(false)
                               handleSetCurrentScore([
                                 currentScore[0] + 1,
                                 currentScore[1],
-                              ]);
+                              ])
                               handleSetMostRecentWinner(
                                 1,
                                 [
                                   ...roomConfig.legalStages,
                                   ...roomConfig.counterpickStages,
-                                ][selectedStage]?.name ?? ""
-                              );
+                                ][selectedStage]?.name ?? ''
+                              )
                               if (currentScore[0] === Math.floor(bestOf / 2)) {
-                                handleSetRoomStatus("Complete");
+                                handleSetRoomStatus('Complete')
                               } else {
                                 if (roomConfig.winnerCharacterLocked) {
-                                  handleSetCharacterLocked(1, true);
+                                  handleSetCharacterLocked(1, true)
                                 }
-                                handleAdvanceRoomState(roomState + 1);
+                                handleAdvanceRoomState(roomState + 1)
                               }
                             }
                           }}
                           className={`rounded ${
                             iAmPlayer === 1
-                              ? "bg-slate-500"
-                              : "bg-green-500 hover:bg-green-700"
+                              ? 'bg-slate-500'
+                              : 'bg-green-500 hover:bg-green-700'
                           } px-4 py-2 text-4xl  text-white`}
                         >
                           {confirmResult && iAmPlayer === 2
@@ -856,34 +850,34 @@ const StrikerRoomCore = () => {
                           disabled={!iAmPlayer || iAmPlayer === 2}
                           onClick={() => {
                             if (!confirmResult) {
-                              setConfirmResult(true);
+                              setConfirmResult(true)
                             } else {
-                              setConfirmResult(false);
+                              setConfirmResult(false)
                               handleSetCurrentScore([
                                 currentScore[0],
                                 currentScore[1] + 1,
-                              ]);
+                              ])
                               handleSetMostRecentWinner(
                                 2,
                                 [
                                   ...roomConfig.legalStages,
                                   ...roomConfig.counterpickStages,
-                                ][selectedStage]?.name ?? ""
-                              );
+                                ][selectedStage]?.name ?? ''
+                              )
                               if (currentScore[1] === Math.floor(bestOf / 2)) {
-                                handleSetRoomStatus("Complete");
+                                handleSetRoomStatus('Complete')
                               } else {
                                 if (roomConfig.winnerCharacterLocked) {
-                                  handleSetCharacterLocked(2, true);
+                                  handleSetCharacterLocked(2, true)
                                 }
-                                handleAdvanceRoomState(roomState + 1);
+                                handleAdvanceRoomState(roomState + 1)
                               }
                             }
                           }}
                           className={`rounded ${
                             iAmPlayer === 2
-                              ? "bg-slate-500"
-                              : "bg-green-500 hover:bg-green-700"
+                              ? 'bg-slate-500'
+                              : 'bg-green-500 hover:bg-green-700'
                           } px-4 py-2 text-4xl  text-white`}
                         >
                           {confirmResult && iAmPlayer === 1
@@ -917,14 +911,14 @@ const StrikerRoomCore = () => {
                         }
                       </div>
                       <div className="absolute bottom-2 right-4 text-lg sm:text-2xl">
-                        Width:{" "}
+                        Width:{' '}
                         {
                           [
                             ...roomConfig.legalStages,
                             ...roomConfig.counterpickStages,
                           ][selectedStage]?.width
-                        }{" "}
-                        Height:{" "}
+                        }{' '}
+                        Height:{' '}
                         {
                           [
                             ...roomConfig.legalStages,
@@ -938,7 +932,7 @@ const StrikerRoomCore = () => {
               )}
 
             {/* W picks character first, L picks character second */}
-            {roomStatus === "Active" &&
+            {roomStatus === 'Active' &&
               roomState > 3 &&
               roomState % 3 === 1 && (
                 <>
@@ -958,31 +952,31 @@ const StrikerRoomCore = () => {
                         onClick={() => {
                           if (iAmPlayer === 1) {
                             if (!p1CharacterLocked) {
-                              handleSetCharacterLocked(1, true);
+                              handleSetCharacterLocked(1, true)
                             }
                           } else if (iAmPlayer === 2) {
                             if (!p2CharacterLocked) {
-                              handleSetCharacterLocked(2, true);
+                              handleSetCharacterLocked(2, true)
                             }
                           }
                         }}
                         className={`rounded ${
                           iAmPlayer === 1
                             ? p1CharacterLocked
-                              ? "bg-red-500"
-                              : "bg-green-500"
+                              ? 'bg-red-500'
+                              : 'bg-green-500'
                             : p2CharacterLocked
-                            ? "bg-red-500"
-                            : "bg-green-500"
+                            ? 'bg-red-500'
+                            : 'bg-green-500'
                         } px-4 py-2 text-2xl  text-white`}
                       >
                         {iAmPlayer === 1
                           ? p1CharacterLocked
-                            ? "LOCKED"
-                            : "LOCK IN"
+                            ? 'LOCKED'
+                            : 'LOCK IN'
                           : p2CharacterLocked
-                          ? "LOCKED"
-                          : "LOCK IN"}
+                          ? 'LOCKED'
+                          : 'LOCK IN'}
                       </button>
                     )}
                     <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-10">
@@ -998,7 +992,7 @@ const StrikerRoomCore = () => {
                                 handleSetCharacter(
                                   1,
                                   character.name as Character
-                                );
+                                )
                               }
                             } else if (iAmPlayer === 2) {
                               if (
@@ -1009,7 +1003,7 @@ const StrikerRoomCore = () => {
                                 handleSetCharacter(
                                   2,
                                   character.name as Character
-                                );
+                                )
                               }
                             }
                           }}
@@ -1028,8 +1022,8 @@ const StrikerRoomCore = () => {
                                   mostRecentWinner === 2) ||
                                   (p1CharacterLocked &&
                                     mostRecentWinner === 1)))
-                                ? "hover:bg-slate-200"
-                                : ""
+                                ? 'hover:bg-slate-200'
+                                : ''
                             }`}
                             src={character.image}
                             alt={character.name}
@@ -1042,7 +1036,7 @@ const StrikerRoomCore = () => {
               )}
 
             {/* W bans stages, L picks stage */}
-            {roomStatus === "Active" &&
+            {roomStatus === 'Active' &&
               roomState > 3 &&
               roomState % 3 === 2 && (
                 <>
@@ -1053,14 +1047,14 @@ const StrikerRoomCore = () => {
                       currentBans.length === roomConfig.numberOfBans)
                       ? room.p1.name
                       : room.p2?.name}
-                    :{" "}
+                    :{' '}
                     {currentBans.length === roomConfig.numberOfBans
-                      ? "Pick"
-                      : "Ban"}{" "}
+                      ? 'Pick'
+                      : 'Ban'}{' '}
                     {roomConfig.numberOfBans === 1 ||
                     currentBans.length - roomConfig.numberOfBans === 1 ||
                     currentBans.length === roomConfig.numberOfBans
-                      ? "1 stage"
+                      ? '1 stage'
                       : `${
                           roomConfig.numberOfBans - currentBans.length
                         } stages`}
@@ -1091,14 +1085,14 @@ const StrikerRoomCore = () => {
                         }
                       </div>
                       <div className="absolute bottom-2 right-4 text-lg sm:text-2xl">
-                        Width:{" "}
+                        Width:{' '}
                         {
                           [
                             ...roomConfig.legalStages,
                             ...roomConfig.counterpickStages,
                           ][selectedStage]?.width
-                        }{" "}
-                        Height:{" "}
+                        }{' '}
+                        Height:{' '}
                         {
                           [
                             ...roomConfig.legalStages,
@@ -1112,11 +1106,11 @@ const StrikerRoomCore = () => {
                             if (
                               currentBans.length === roomConfig.numberOfBans
                             ) {
-                              handleAdvanceRoomState(roomState + 1);
-                              handleSetCurrentBans("");
+                              handleAdvanceRoomState(roomState + 1)
+                              handleSetCurrentBans('')
                             } else {
-                              const newBans = [...currentBans, selectedStage];
-                              handleSetCurrentBans(newBans.join(","));
+                              const newBans = [...currentBans, selectedStage]
+                              handleSetCurrentBans(newBans.join(','))
                               handleSetSelectedStage(
                                 firstMissingNumber(
                                   newBans,
@@ -1125,18 +1119,18 @@ const StrikerRoomCore = () => {
                                     ...roomConfig.counterpickStages,
                                   ].length
                                 )
-                              );
+                              )
                             }
                           }}
                           className={`text-4xl ${
                             currentBans.length === roomConfig.numberOfBans
-                              ? "bg-green-500 hover:bg-green-700"
-                              : "bg-red-500 hover:bg-red-700"
+                              ? 'bg-green-500 hover:bg-green-700'
+                              : 'bg-red-500 hover:bg-red-700'
                           } absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded px-4 py-2  text-white`}
                         >
                           {currentBans.length === roomConfig.numberOfBans
-                            ? "PICK"
-                            : "BAN"}
+                            ? 'PICK'
+                            : 'BAN'}
                         </button>
                       )}
                     </div>
@@ -1151,7 +1145,7 @@ const StrikerRoomCore = () => {
                               iAmPlayer === currentBanner &&
                               !currentBans.includes(idx)
                             ) {
-                              handleSetSelectedStage(idx);
+                              handleSetSelectedStage(idx)
                             }
                           }}
                           className="relative"
@@ -1160,12 +1154,12 @@ const StrikerRoomCore = () => {
                           <img
                             className={`rounded-xl border-4 ${
                               selectedStage === idx
-                                ? "border-blue-600"
+                                ? 'border-blue-600'
                                 : currentBans.includes(idx)
-                                ? "border-red-600"
+                                ? 'border-red-600'
                                 : idx > roomConfig.legalStages.length - 1
-                                ? "border-yellow-400"
-                                : "cursor-pointer border-green-600"
+                                ? 'border-yellow-400'
+                                : 'cursor-pointer border-green-600'
                             }`}
                             src={stage.image}
                             alt={stage.name}
@@ -1182,62 +1176,62 @@ const StrikerRoomCore = () => {
                 </>
               )}
 
-            {roomStatus === "Active" && roomState > 3 && (
+            {roomStatus === 'Active' && roomState > 3 && (
               <div className="flex justify-center pt-8">
                 <button
                   disabled={!iAmPlayer}
                   onClick={() => {
                     if (iAmPlayer) {
-                      handleSetRevert(iAmPlayer);
+                      handleSetRevert(iAmPlayer)
                     }
                   }}
                   className={`rounded ${
                     revertRequested === iAmPlayer
-                      ? "bg-red-500"
-                      : "bg-green-500"
+                      ? 'bg-red-500'
+                      : 'bg-green-500'
                   }
              px-4 py-2 text-lg text-white ${
-               revertRequested === iAmPlayer ? "" : "hover:bg-green-700"
+               revertRequested === iAmPlayer ? '' : 'hover:bg-green-700'
              }`}
                 >
                   {!revertRequested
-                    ? "Request undo"
+                    ? 'Request undo'
                     : revertRequested !== iAmPlayer
                     ? `Undo requested${
                         revertRequested === 1
                           ? ` by ${room.p1.name}`
                           : revertRequested === 2
                           ? ` by ${room.p2?.name}`
-                          : ""
+                          : ''
                       }`
-                    : "Undo requested"}
+                    : 'Undo requested'}
                 </button>
               </div>
             )}
           </>
         )}
     </>
-  );
-};
+  )
+}
 
 const StrikerRoomView = ({ roomId }: { roomId: string }) => {
   return (
     <PusherProvider slug={`room-${roomId}`}>
       <StrikerRoomCore />
     </PusherProvider>
-  );
-};
+  )
+}
 
 const LazyRoomView = dynamic(() => Promise.resolve(StrikerRoomView), {
   ssr: false,
-});
+})
 
 export default function StrikerView() {
-  const { query } = useRouter();
+  const { query } = useRouter()
 
-  if (!query.roomId || typeof query.roomId !== "string") {
-    return null;
+  if (!query.roomId || typeof query.roomId !== 'string') {
+    return null
   }
 
-  return <LazyRoomView roomId={query.roomId} />;
+  return <LazyRoomView roomId={query.roomId} />
 }

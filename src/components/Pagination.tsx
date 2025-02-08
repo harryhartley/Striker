@@ -1,11 +1,11 @@
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/20/solid";
-import type { Dispatch, SetStateAction } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid'
+import type { Dispatch, SetStateAction } from 'react'
 
 interface PaginationProps {
-  currentPage: number;
-  setCurrentPage: Dispatch<SetStateAction<number>>;
-  itemCount: number;
-  pageSize: number;
+  currentPage: number
+  setCurrentPage: Dispatch<SetStateAction<number>>
+  itemCount: number
+  pageSize: number
 }
 
 export const Pagination = ({
@@ -14,8 +14,8 @@ export const Pagination = ({
   itemCount,
   pageSize,
 }: PaginationProps) => {
-  const neighbours = 2;
-  const numberOfPages = Math.ceil(itemCount / pageSize) || 1;
+  const neighbours = 2
+  const numberOfPages = Math.ceil(itemCount / pageSize) || 1
 
   return (
     <div className="flex justify-center">
@@ -45,7 +45,7 @@ export const Pagination = ({
                       {idx + 1}
                     </button>
                   </li>
-                );
+                )
               }
               if (idx + 1 === 1 || idx + 1 === numberOfPages) {
                 return (
@@ -57,7 +57,7 @@ export const Pagination = ({
                       {idx + 1}
                     </button>
                   </li>
-                );
+                )
               }
               if (
                 idx + 1 === currentPage - neighbours - 1 ||
@@ -70,13 +70,13 @@ export const Pagination = ({
                   >
                     ...
                   </button>
-                );
+                )
               }
               if (
                 idx + 1 < currentPage - neighbours ||
                 idx + 1 > currentPage + neighbours
               ) {
-                return null;
+                return null
               }
               return (
                 <li key={idx}>
@@ -88,7 +88,7 @@ export const Pagination = ({
                     {idx + 1}
                   </button>
                 </li>
-              );
+              )
             })}
           <li>
             <button
@@ -106,5 +106,5 @@ export const Pagination = ({
         </ul>
       </nav>
     </div>
-  );
-};
+  )
+}
